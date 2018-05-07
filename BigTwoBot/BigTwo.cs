@@ -28,6 +28,7 @@ namespace BigTwoBot
         public long ChatId;
         public string GroupName;
         public int GameId;
+        public string GroupLink;
         public Group DbGroup;
         public List<BTPlayer> Players;
         public Queue<BTPlayer> PlayerQueue = new Queue<BTPlayer>();
@@ -41,6 +42,9 @@ namespace BigTwoBot
         public BTPlayer Winner;
         public bool BigTwoDealt = false;
         public BTPlayer BigTwoDealtBy;
+
+        public InlineKeyboardMarkup GroupMarkup = null;
+        public InlineKeyboardMarkup BotMarkup;
 
         public BTPlayer Initiator;
         public Guid Id = Guid.NewGuid();
@@ -58,7 +62,7 @@ namespace BigTwoBot
         #endregion
 
 
-        public BigTwo(long chatId, User u, string groupName)
+        public BigTwo(long chatId, User u, string groupName, string chatUsername = null)
         {
             ChatId = chatId;
             GroupName = groupName;
@@ -68,10 +72,26 @@ namespace BigTwoBot
             using (var db = new BigTwoDb())
             {
                 DbGroup = db.Groups.FirstOrDefault(x => x.GroupId == ChatId);
+                DbGroup.UserName = chatUsername;
+                GroupLink = DbGroup.UserName != null ? $"https://t.me/{DbGroup.UserName}" : DbGroup.GroupLink ?? null;
                 LoadLanguage(DbGroup.Language);
                 if (DbGroup == null)
                     Bot.RemoveGame(this);
                 ChooseCardTime = DbGroup.ChooseCardTime ?? Constants.ChooseCardTime;
+                db.SaveChanges();
+                if (GroupLink != null)
+                    GroupMarkup = new InlineKeyboardMarkup(
+                        new InlineKeyboardButton[][] {
+                            new InlineKeyboardUrlButton[] {
+                                new InlineKeyboardUrlButton(GetTranslation("BackGroup", GroupName), GroupLink)
+                            }
+                        });
+                BotMarkup = new InlineKeyboardMarkup(
+                    new InlineKeyboardButton[][] {
+                        new InlineKeyboardButton[] {
+                            new InlineKeyboardUrlButton(GetTranslation("GoToBot"), $"https://t.me/{Bot.Me.Username}")
+                        }
+                    });
             }
             // something
             #endregion
@@ -91,138 +111,165 @@ namespace BigTwoBot
 
         private void GameTimer()
         {
-            while (Phase != GamePhase.Ending)
+            while (Phase != GamePhase.Ending && Phase != GamePhase.KillGame)
             {
+                try
+                {
 #if DEBUG
                 AddPlayer(new User { Id = 433942669, FirstName = "Mud9User", IsBot = false, LanguageCode = "zh-HK", Username = "mud9user" });
                 AddPlayer(new User { Id = 415774316, FirstName = "Avalonese Dev", IsBot = false, LanguageCode = "zh-HK", Username = "avalonesedev" });
                 AddPlayer(new User { Id = 267359519, FirstName = "Ian", IsBot = false, LanguageCode = "zh-HK", Username = "lmaohahaha" });
 #endif
-                for (var i = 0; i < JoinTime; i++)
-                {
-                    if (this.Phase == GamePhase.InGame)
-                        break;
-                    if (this.Phase == GamePhase.Ending)
-                        return;
-                    //try to remove duplicated game
-                    if (i == 10)
+                    for (var i = 0; i < JoinTime; i++)
                     {
-                        var count = Bot.Games.Count(x => x.ChatId == ChatId);
-                        if (count > 1)
+                        if (this.Phase == GamePhase.InGame)
+                            break;
+                        if (this.Phase == GamePhase.Ending)
+                            return;
+                        if (this.Phase == GamePhase.KillGame)
+                            return;
+                        //try to remove duplicated game
+                        if (i == 10)
                         {
-                            var toDel = Bot.Games.FirstOrDefault(x => x.Id != this.Id && x.Phase != GamePhase.InGame);
-                            if (toDel != null)
+                            var count = Bot.Games.Count(x => x.ChatId == ChatId);
+                            if (count > 1)
                             {
-                                Bot.Send(toDel.ChatId, GetTranslation("DuplicatedGameRemoving"));
-                                toDel.Phase = GamePhase.Ending;
-                                Bot.RemoveGame(toDel);
+                                var toDel = Bot.Games.Where(x => x.Players.Count < this.Players.Count).OrderBy(x => x.Players.Count).Where(x => x.Id != this.Id && x.Phase != GamePhase.InGame);
+                                if (toDel != null)
+                                {
+                                    Send(GetTranslation("DuplicatedGameRemoving"));
+                                    foreach (var g in toDel)		
+	                                {		
+	                                    g.Phase = GamePhase.KillGame;		
+			
+	                                    try		
+	                                    {		
+                                        Bot.RemoveGame(g);		
+	                                    }		
+	                                    catch		
+	                                    {		
+	                                        // should be removed already		
+	                                    }		
+	                                }
+                                }
                             }
                         }
-                    }
-                    if (_secondsToAdd != 0)
-                    {
-                        i = Math.Max(i - _secondsToAdd, Constants.JoinTime - Constants.JoinTimeMax);
-                        // Bot.Send(ChatId, GetTranslation("JoinTimeLeft", TimeSpan.FromSeconds(Constants.JoinTime - i).ToString(@"mm\:ss")));
-                        _secondsToAdd = 0;
-                    }
-                    var specialTime = JoinTime - i;
-                    if (new int[] { 10, 30, 60, 90 }.Contains(specialTime))
-                    {
-                        Bot.Send(ChatId, GetTranslation("JoinTimeSpecialSeconds", specialTime));
-                    }
-                    if (Players.Count == 4)
-                        break;
-                    Thread.Sleep(1000);
-                }
-
-                if (this.Phase == GamePhase.Ending)
-                    return;
-                do
-                {
-                    BTPlayer p = Players.FirstOrDefault(x => Players.Count(y => y.TelegramId == x.TelegramId) > 1);
-                    if (p == null) break;
-                    Players.Remove(p);
-                }
-                while (true);
-
-                if (this.Phase == GamePhase.Ending)
-                    return;
-
-                if (this.Players.Count() == 4)
-                    this.Phase = GamePhase.InGame;
-                if (this.Phase != GamePhase.InGame)
-                {
-                    /*
-                    this.Phase = GamePhase.Ending;
-                    Bot.RemoveGame(this);
-                    Bot.Send(ChatId, "Game ended!");
-                    */
-                }
-                else
-                {
-                    #region Ready to start game
-                    if (Players.Count < 4)
-                    {
-                        Send(GetTranslation("GameEnded"));
-                        return;
-                    }
-
-                    Send(GetTranslation("GameStart"));
-
-                    // create game + gameplayers in db
-                    using (var db = new BigTwoDb())
-                    {
-                        DbGame = new Database.Game
+                        if (_secondsToAdd != 0)
                         {
-                            GrpId = DbGroup.Id,
-                            GroupId = ChatId,
-                            GroupName = GroupName,
-                            TimeStarted = DateTime.UtcNow
-                        };
-                        db.Games.Add(DbGame);
-                        db.SaveChanges();
-                        GameId = DbGame.Id;
-                        foreach (var p in Players)
-                        {
-                            GamePlayer DbGamePlayer = new GamePlayer
-                            {
-                                PlayerId = db.Players.FirstOrDefault(x => x.TelegramId == p.TelegramId).Id,
-                                GameId = GameId
-                            };
-                            db.GamePlayers.Add(DbGamePlayer);
+                            i = Math.Max(i - _secondsToAdd, Constants.JoinTime - Constants.JoinTimeMax);
+                            // Bot.Send(ChatId, GetTranslation("JoinTimeLeft", TimeSpan.FromSeconds(Constants.JoinTime - i).ToString(@"mm\:ss")));
+                            _secondsToAdd = 0;
                         }
-                        db.SaveChanges();
-                    }
-
-                    PrepareGame();
-
-                    // remove joined players from nextgame list
-                    // RemoveFromNextGame(Players.Select(x => x.TelegramId).ToList());
-
-                    #endregion
-
-                    #region Start!
-                    foreach (var player in Players)
-                    {
-                        // SendPM(player, GetPlayerInitialCards(player.CardsInHand));
-                    }
-                    while (Phase != GamePhase.Ending)
-                    {
-                        // _playerList = Send(GeneratePlayerList()).MessageId;
-                        PlayersChooseCard();
-                        if (Phase == GamePhase.Ending)
+                        var specialTime = JoinTime - i;
+                        if (new int[] { 10, 30, 60, 90 }.Contains(specialTime))
+                        {
+                            Bot.Send(ChatId, GetTranslation("JoinTimeSpecialSeconds", specialTime));
+                        }
+                        if (Players.Count == 4)
                             break;
-                        if (BigTwoDealt)
-                            NextPlayerAfterBigTwo(BigTwoDealtBy);
-                        else
-                            NextPlayer();
+                        Thread.Sleep(1000);
                     }
-                    EndGame();
-                    #endregion
-                }
-                this.Phase = GamePhase.Ending;
-                Bot.Send(ChatId, GetTranslation("GameEnded"));
 
+                    if (this.Phase == GamePhase.Ending)
+                        return;
+                    do
+                    {
+                        BTPlayer p = Players.FirstOrDefault(x => Players.Count(y => y.TelegramId == x.TelegramId) > 1);
+                        if (p == null) break;
+                        Players.Remove(p);
+                    }
+                    while (true);
+
+                    if (this.Phase == GamePhase.Ending)
+                        return;
+
+                    if (this.Players.Count() == 4)
+                        this.Phase = GamePhase.InGame;
+                    if (this.Phase != GamePhase.InGame)
+                    {
+                        /*
+                        this.Phase = GamePhase.Ending;
+                        Bot.RemoveGame(this);
+                        Bot.Send(ChatId, "Game ended!");
+                        */
+                    }
+                    else
+                    {
+                        #region Ready to start game
+                        if (Players.Count < 4)
+                        {
+                            Send(GetTranslation("GameEnded"));
+                            return;
+                        }
+
+                        Send(GetTranslation("GameStart"));
+
+                        // create game + gameplayers in db
+                        using (var db = new BigTwoDb())
+                        {
+                            DbGame = new Database.Game
+                            {
+                                GrpId = DbGroup.Id,
+                                GroupId = ChatId,
+                                GroupName = GroupName,
+                                TimeStarted = DateTime.UtcNow
+                            };
+                            db.Games.Add(DbGame);
+                            db.SaveChanges();
+                            GameId = DbGame.Id;
+                            foreach (var p in Players)
+                            {
+                                GamePlayer DbGamePlayer = new GamePlayer
+                                {
+                                    PlayerId = db.Players.FirstOrDefault(x => x.TelegramId == p.TelegramId).Id,
+                                    GameId = GameId
+                                };
+                                db.GamePlayers.Add(DbGamePlayer);
+                            }
+                            db.SaveChanges();
+                        }
+
+                        PrepareGame();
+
+                        // remove joined players from nextgame list
+                        // RemoveFromNextGame(Players.Select(x => x.TelegramId).ToList());
+
+                        #endregion
+
+                        #region Start!
+                        foreach (var player in Players)
+                        {
+                            // SendPM(player, GetPlayerInitialCards(player.CardsInHand));
+                        }
+                        while (Phase != GamePhase.Ending)
+                        {
+                            // _playerList = Send(GeneratePlayerList()).MessageId;
+                            PlayersChooseCard();
+                            if (Phase == GamePhase.Ending)
+                                break;
+                            if (BigTwoDealt)
+                                NextPlayerAfterBigTwo(BigTwoDealtBy);
+                            else
+                                NextPlayer();
+                        }
+                        EndGame();
+                        #endregion
+                    }
+                    this.Phase = GamePhase.Ending;
+                    Bot.Send(ChatId, GetTranslation("GameEnded"));
+                }
+                catch (Exception ex)
+                {
+                    if (Phase == GamePhase.KillGame)
+                    {
+                        // normal
+                    }
+                    else
+                    {
+                        Log(ex);
+                        Phase = GamePhase.KillGame;
+                    }
+                }
             }
 
             Bot.RemoveGame(this);
@@ -259,7 +306,7 @@ namespace BigTwoBot
                     Message ret;
                     try
                     {
-                        ret = SendPM(p, GetTranslation("YouJoined", GroupName));
+                        ret = SendPM(p, GetTranslation("YouJoined", GroupName), GroupMarkup);
                         if (ret == null)
                             throw new Exception();
                     }
@@ -396,7 +443,7 @@ namespace BigTwoBot
                 var forGroup = PlayerQueue.GetNumOfCardsString() + Environment.NewLine + Environment.NewLine;
                 forGroup += CurrentHand.Count > 0 ? GetTranslation("CurrentlyOnTable") + CurrentDealer.GetName() + ":" + Environment.NewLine + CurrentHand.GetString() : GetTranslation("TableClean");
                 forGroup += Environment.NewLine + Environment.NewLine + GetTranslation("PlayersTurn", p.GetMention(), ChooseCardTime);
-                Send(forGroup);
+                Send(forGroup, BotMarkup);
 
                 // choose card time
                 for (int i = 0; i < ChooseCardTime; i++)
@@ -526,7 +573,7 @@ namespace BigTwoBot
                     var toNotify = db.NotifyGames.Where(x => x.GroupId == grpId && x.UserId != Initiator.TelegramId).Select(x => x.UserId).ToList();
                     foreach (int user in toNotify)
                     {
-                        Bot.Send(user, GetTranslation("GameIsStarting", GroupName));
+                        Bot.Send(user, GetTranslation("GameIsStarting", GroupLink != null ? $"<a href='{GroupLink}'>{GroupName}</a>" : GroupName), GroupMarkup);
                     }
                     db.Database.ExecuteSqlCommand($"DELETE FROM NotifyGame WHERE GROUPID = {grpId}");
                     db.SaveChanges();
@@ -539,11 +586,11 @@ namespace BigTwoBot
 
         #region Bot API Related Methods
 
-        public Message Send(string msg)
+        public Message Send(string msg, InlineKeyboardMarkup markup = null)
         {
             try
             {
-                return Bot.Send(ChatId, msg);
+                return Bot.Send(ChatId, msg, markup);
             }
             catch (Exception e)
             {
@@ -552,11 +599,11 @@ namespace BigTwoBot
             }
         }
 
-        public Message SendPM(BTPlayer p, string msg)
+        public Message SendPM(BTPlayer p, string msg, InlineKeyboardMarkup markup = null)
         {
             try
             {
-                return Bot.Send(p.TelegramId, msg);
+                return Bot.Send(p.TelegramId, msg, markup);
             }
             catch (Exception e)
             {
@@ -727,8 +774,8 @@ namespace BigTwoBot
                     if (Phase == GamePhase.InGame)
                     {
                         var p = Players.FirstOrDefault(x => x.TelegramId == msg.From.Id);
-                        if (SendPM(p, GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString()) != null)
-                            msg.Reply(GetTranslation("SentPM"));
+                        if (SendPM(p, GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString(), GroupMarkup) != null)
+                            msg.Reply(GetTranslation("SentPM"), BotMarkup);
                     }
                     break;
             }
@@ -758,7 +805,7 @@ namespace BigTwoBot
                                 Bot.Api.AnswerCallbackQueryAsync(query.Id, GetTranslation("UseAnything"), true);
                                 return;
                             }
-                            Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, GetTranslation("Pass"));
+                            Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, GetTranslation("Pass"), GroupMarkup);
                             p.UpdateChosenIndexes(empty: true);
                             p.CurrentQuestion = null;
                             return;
@@ -790,7 +837,7 @@ namespace BigTwoBot
                                 return;
                             }
                             var text = chosenCards.GetString();
-                            Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, text);
+                            Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, text, GroupMarkup);
                             p.UseCards(chosenCards);
                             CurrentHand = chosenCards.ToList();
                             CurrentHandType = CurrentHand.CheckChosenCards();
@@ -921,7 +968,7 @@ namespace BigTwoBot
 
         public enum GamePhase
         {
-            Joining, InGame, Ending
+            Joining, InGame, Ending, KillGame
         }
 
         #endregion

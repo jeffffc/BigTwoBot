@@ -29,7 +29,7 @@ namespace BigTwoBot
                 try
                 {
                     Bot.Api.SendChatActionAsync(msg.From.Id, ChatAction.Typing).Wait();
-                    Bot.AddGame(new BigTwo(msg.Chat.Id, msg.From, msg.Chat.Title));
+                    Bot.AddGame(new BigTwo(msg.Chat.Id, msg.From, msg.Chat.Title, msg.Chat.Username));
                 }
                 catch (Exception e)
                 {
