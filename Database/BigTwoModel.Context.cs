@@ -32,5 +32,7 @@ namespace Database
         public virtual DbSet<Player> Players { get; set; }
         public virtual DbSet<Admin> Admins { get; set; }
         public virtual DbSet<NotifyGame> NotifyGames { get; set; }
+        public virtual DbSet<ChipsTransaction> ChipsTransactions { get; set; }
+        public virtual DbSet<C_ChipsLog> C_ChipsLog { get; set; }
     }
 }

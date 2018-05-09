@@ -35,6 +35,7 @@ namespace BigTwoBot.Models
 
         public int? Choice { get; set; } = null;
         public QuestionAsked CurrentQuestion { get; set; } = null;
+        public string DeckText { get; set; }
 
         public void AddCard(BTCard BTCard)
         {
@@ -50,6 +51,7 @@ namespace BigTwoBot.Models
         {
             Hand.RemoveCards(cards);
             DealCardMenu.ChosenIndexes.Clear();
+            DealCardMenu.LastValidIndexes.Clear();
             DealCardMenu.UpdateHand(Hand);
         }
 
@@ -62,7 +64,10 @@ namespace BigTwoBot.Models
         public void UpdateChosenIndexes(int index = 0, bool empty = false)
         {
             if (empty)
+            {
                 DealCardMenu.ChosenIndexes.Clear();
+                DealCardMenu.LastValidIndexes.Clear();
+            }
             else if (DealCardMenu.ChosenIndexes.Contains(index))
                 DealCardMenu.ChosenIndexes.Remove(index);
             else

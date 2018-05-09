@@ -196,10 +196,10 @@ namespace BigTwoBot
                 var r = Bot.Api.SendTextMessageAsync(m.From.Id, text, parseMode, disableWebPagePreview, disableNotification, 0, replyMarkup).Result;
                 if (r == null)
                 {
-                    return m.Reply("Please `/start` me in private first!", new InlineKeyboardMarkup(new InlineKeyboardButton[] {
-                        new InlineKeyboardUrlButton("Start me!", $"https://t.me/{Bot.Me.Username}") }));
+                    return m.Reply(Helpers.GetTranslation("NotStartedBot", Helpers.GetLanguage(m.From.Id)), new InlineKeyboardMarkup(new InlineKeyboardButton[] {
+                        new InlineKeyboardUrlButton(Helpers.GetTranslation("StartMe", Helpers.GetLanguage(m.From.Id)), $"https://t.me/{Bot.Me.Username}") }));
                 }
-                return m.Reply("I have sent you a PM");
+                return m.Reply(Helpers.GetTranslation("SentPM", Helpers.GetLanguage(m.From.Id)));
             }
             catch (Exception e)
             {

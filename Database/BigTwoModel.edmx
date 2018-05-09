@@ -5,6 +5,16 @@
     <!-- SSDL content -->
     <edmx:StorageModels>
     <Schema Namespace="bigtwoModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="_ChipsLog">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="PlayerId" Type="int" Nullable="false" />
+          <Property Name="OldChips" Type="bigint" />
+          <Property Name="NewChips" Type="bigint" />
+          <Property Name="TimeTransacted" Type="datetime" />
+        </EntityType>
         <!--Errors Found During Generation:
 warning 6002: The table/view 'bigtwo.dbo.Admin' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.-->
         <EntityType Name="Admin">
@@ -12,6 +22,16 @@ warning 6002: The table/view 'bigtwo.dbo.Admin' does not have a primary key defi
             <PropertyRef Name="TelegramId" />
           </Key>
           <Property Name="TelegramId" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityType Name="ChipsTransaction">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="GameId" Type="int" Nullable="false" />
+          <Property Name="GamePlayerId" Type="int" Nullable="false" />
+          <Property Name="PlayerId" Type="int" Nullable="false" />
+          <Property Name="ChipsTransacted" Type="int" />
         </EntityType>
         <EntityType Name="Game">
           <Key>
@@ -23,6 +43,7 @@ warning 6002: The table/view 'bigtwo.dbo.Admin' does not have a primary key defi
           <Property Name="GroupId" Type="bigint" Nullable="false" />
           <Property Name="TimeStarted" Type="datetime" />
           <Property Name="TimeEnded" Type="datetime" />
+          <Property Name="ChipsPerCard" Type="int" />
         </EntityType>
         <EntityType Name="GamePlayer">
           <Key>
@@ -32,6 +53,7 @@ warning 6002: The table/view 'bigtwo.dbo.Admin' does not have a primary key defi
           <Property Name="PlayerId" Type="int" Nullable="false" />
           <Property Name="GameId" Type="int" Nullable="false" />
           <Property Name="Won" Type="bit" />
+          <Property Name="CardsLeft" Type="int" />
         </EntityType>
         <EntityType Name="Group">
           <Key>
@@ -46,6 +68,8 @@ warning 6002: The table/view 'bigtwo.dbo.Admin' does not have a primary key defi
           <Property Name="GroupLink" Type="nvarchar(max)" />
           <Property Name="CreatedTime" Type="datetime" />
           <Property Name="ChooseCardTime" Type="int" />
+          <Property Name="ChipsPerCard" Type="int" />
+          <Property Name="PlayChips" Type="bit" />
         </EntityType>
         <!--Errors Found During Generation:
 warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key defined. The key has been inferred and the definition was created as a read-only table/view.-->
@@ -70,7 +94,44 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <Property Name="BanReason" Type="nvarchar(max)" />
           <Property Name="Language" Type="nvarchar(max)" />
           <Property Name="Achievements" Type="bigint" />
+          <Property Name="Chips" Type="bigint" />
         </EntityType>
+        <Association Name="FK__ChipsLog_Player">
+          <End Role="Player" Type="Self.Player" Multiplicity="1" />
+          <End Role="_ChipsLog" Type="Self._ChipsLog" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Player">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="_ChipsLog">
+              <PropertyRef Name="PlayerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ChipsTransaction_Game">
+          <End Role="Game" Type="Self.Game" Multiplicity="1" />
+          <End Role="ChipsTransaction" Type="Self.ChipsTransaction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Game">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="ChipsTransaction">
+              <PropertyRef Name="GameId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ChipsTransaction_GamePlayer">
+          <End Role="GamePlayer" Type="Self.GamePlayer" Multiplicity="1" />
+          <End Role="ChipsTransaction" Type="Self.ChipsTransaction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="GamePlayer">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="ChipsTransaction">
+              <PropertyRef Name="GamePlayerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_Game_Group">
           <End Role="Group" Type="Self.Group" Multiplicity="1" />
           <End Role="Game" Type="Self.Game" Multiplicity="*" />
@@ -108,6 +169,8 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           </ReferentialConstraint>
         </Association>
         <EntityContainer Name="bigtwoModelStoreContainer">
+          <EntitySet Name="_ChipsLog" EntityType="Self._ChipsLog" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="ChipsTransaction" EntityType="Self.ChipsTransaction" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Game" EntityType="Self.Game" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="GamePlayer" EntityType="Self.GamePlayer" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Group" EntityType="Self.Group" Schema="dbo" store:Type="Tables" />
@@ -123,6 +186,18 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
     [NotifyGame].[GroupId] AS [GroupId]
     FROM [dbo].[NotifyGame] AS [NotifyGame]</DefiningQuery>
           </EntitySet>
+          <AssociationSet Name="FK__ChipsLog_Player" Association="Self.FK__ChipsLog_Player">
+            <End Role="Player" EntitySet="Player" />
+            <End Role="_ChipsLog" EntitySet="_ChipsLog" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ChipsTransaction_Game" Association="Self.FK_ChipsTransaction_Game">
+            <End Role="Game" EntitySet="Game" />
+            <End Role="ChipsTransaction" EntitySet="ChipsTransaction" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ChipsTransaction_GamePlayer" Association="Self.FK_ChipsTransaction_GamePlayer">
+            <End Role="GamePlayer" EntitySet="GamePlayer" />
+            <End Role="ChipsTransaction" EntitySet="ChipsTransaction" />
+          </AssociationSet>
           <AssociationSet Name="FK_Game_Group" Association="Self.FK_Game_Group">
             <End Role="Group" EntitySet="Group" />
             <End Role="Game" EntitySet="Game" />
@@ -152,6 +227,8 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <Property Name="TimeEnded" Type="DateTime" Precision="3" />
           <NavigationProperty Name="Group" Relationship="Self.FK_Game_Group" FromRole="Game" ToRole="Group" />
           <NavigationProperty Name="GamePlayers" Relationship="Self.FK_GamePlayer_Game" FromRole="Game" ToRole="GamePlayer" />
+          <Property Name="ChipsPerCard" Type="Int32" />
+          <NavigationProperty Name="ChipsTransactions" Relationship="bigtwoModel.FK_ChipsTransaction_Game" FromRole="Game" ToRole="ChipsTransaction" />
         </EntityType>
         <EntityType Name="GamePlayer">
           <Key>
@@ -163,6 +240,8 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <Property Name="Won" Type="Boolean" />
           <NavigationProperty Name="Game" Relationship="Self.FK_GamePlayer_Game" FromRole="GamePlayer" ToRole="Game" />
           <NavigationProperty Name="Player" Relationship="Self.FK_GamePlayer_Player" FromRole="GamePlayer" ToRole="Player" />
+          <NavigationProperty Name="ChipsTransactions" Relationship="bigtwoModel.FK_ChipsTransaction_GamePlayer" FromRole="GamePlayer" ToRole="ChipsTransaction" />
+          <Property Name="CardsLeft" Type="Int32" />
         </EntityType>
         <EntityType Name="Group">
           <Key>
@@ -178,6 +257,8 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <Property Name="CreatedTime" Type="DateTime" Precision="3" />
           <NavigationProperty Name="Games" Relationship="Self.FK_Game_Group" FromRole="Group" ToRole="Game" />
           <Property Name="ChooseCardTime" Type="Int32" />
+          <Property Name="ChipsPerCard" Type="Int32" />
+          <Property Name="PlayChips" Type="Boolean" />
         </EntityType>
         <EntityType Name="Player">
           <Key>
@@ -193,6 +274,9 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <Property Name="Language" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           <Property Name="Achievements" Type="Int64" />
           <NavigationProperty Name="GamePlayers" Relationship="Self.FK_GamePlayer_Player" FromRole="Player" ToRole="GamePlayer" />
+          <Property Name="Chips" Type="Int64" />
+          <NavigationProperty Name="ChipsTransactions" Relationship="bigtwoModel.FK_ChipsTransaction_Player" FromRole="Player" ToRole="ChipsTransaction" />
+          <NavigationProperty Name="C_ChipsLog" Relationship="bigtwoModel.FK__ChipsLog_Player" FromRole="Player" ToRole="C_ChipsLog" />
         </EntityType>
         <EntityType Name="Admin">
           <Key>
@@ -263,7 +347,97 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
             <End Role="Player" EntitySet="Players" />
             <End Role="GamePlayer" EntitySet="GamePlayers" />
           </AssociationSet>
+          <EntitySet Name="ChipsTransactions" EntityType="bigtwoModel.ChipsTransaction" />
+          <AssociationSet Name="FK_ChipsTransaction_Game" Association="bigtwoModel.FK_ChipsTransaction_Game">
+            <End Role="Game" EntitySet="Games" />
+            <End Role="ChipsTransaction" EntitySet="ChipsTransactions" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ChipsTransaction_GamePlayer" Association="bigtwoModel.FK_ChipsTransaction_GamePlayer">
+            <End Role="GamePlayer" EntitySet="GamePlayers" />
+            <End Role="ChipsTransaction" EntitySet="ChipsTransactions" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ChipsTransaction_Player" Association="bigtwoModel.FK_ChipsTransaction_Player">
+            <End Role="Player" EntitySet="Players" />
+            <End Role="ChipsTransaction" EntitySet="ChipsTransactions" />
+          </AssociationSet>
+          <EntitySet Name="C_ChipsLog" EntityType="bigtwoModel.C_ChipsLog" />
+          <AssociationSet Name="FK__ChipsLog_Player" Association="bigtwoModel.FK__ChipsLog_Player">
+            <End Role="Player" EntitySet="Players" />
+            <End Role="C_ChipsLog" EntitySet="C_ChipsLog" />
+          </AssociationSet>
         </EntityContainer>
+        <EntityType Name="ChipsTransaction">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="GameId" Type="Int32" Nullable="false" />
+          <Property Name="GamePlayerId" Type="Int32" Nullable="false" />
+          <Property Name="PlayerId" Type="Int32" Nullable="false" />
+          <Property Name="ChipsTransacted" Type="Int32" />
+          <NavigationProperty Name="Game" Relationship="bigtwoModel.FK_ChipsTransaction_Game" FromRole="ChipsTransaction" ToRole="Game" />
+          <NavigationProperty Name="GamePlayer" Relationship="bigtwoModel.FK_ChipsTransaction_GamePlayer" FromRole="ChipsTransaction" ToRole="GamePlayer" />
+          <NavigationProperty Name="Player" Relationship="bigtwoModel.FK_ChipsTransaction_Player" FromRole="ChipsTransaction" ToRole="Player" />
+        </EntityType>
+        <Association Name="FK_ChipsTransaction_Game">
+          <End Type="bigtwoModel.Game" Role="Game" Multiplicity="1" />
+          <End Type="bigtwoModel.ChipsTransaction" Role="ChipsTransaction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Game">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="ChipsTransaction">
+              <PropertyRef Name="GameId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ChipsTransaction_GamePlayer">
+          <End Type="bigtwoModel.GamePlayer" Role="GamePlayer" Multiplicity="1" />
+          <End Type="bigtwoModel.ChipsTransaction" Role="ChipsTransaction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="GamePlayer">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="ChipsTransaction">
+              <PropertyRef Name="GamePlayerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ChipsTransaction_Player">
+          <End Type="bigtwoModel.Player" Role="Player" Multiplicity="1" />
+          <End Type="bigtwoModel.ChipsTransaction" Role="ChipsTransaction" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Player">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="ChipsTransaction">
+              <PropertyRef Name="GamePlayerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityType Name="C_ChipsLog">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="PlayerId" Type="Int32" Nullable="false" />
+          <Property Name="OldChips" Type="Int64" />
+          <Property Name="NewChips" Type="Int64" />
+          <Property Name="TimeTransacted" Type="DateTime" Precision="3" />
+          <NavigationProperty Name="Player" Relationship="bigtwoModel.FK__ChipsLog_Player" FromRole="C_ChipsLog" ToRole="Player" />
+        </EntityType>
+        <Association Name="FK__ChipsLog_Player">
+          <End Type="bigtwoModel.Player" Role="Player" Multiplicity="1" />
+          <End Type="bigtwoModel.C_ChipsLog" Role="C_ChipsLog" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Player">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="C_ChipsLog">
+              <PropertyRef Name="PlayerId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -273,6 +447,7 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <EntitySetMapping Name="Games">
             <EntityTypeMapping TypeName="bigtwoModel.Game">
               <MappingFragment StoreEntitySet="Game">
+                <ScalarProperty Name="ChipsPerCard" ColumnName="ChipsPerCard" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="GrpId" ColumnName="GrpId" />
                 <ScalarProperty Name="GroupName" ColumnName="GroupName" />
@@ -285,6 +460,7 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <EntitySetMapping Name="GamePlayers">
             <EntityTypeMapping TypeName="bigtwoModel.GamePlayer">
               <MappingFragment StoreEntitySet="GamePlayer">
+                <ScalarProperty Name="CardsLeft" ColumnName="CardsLeft" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="PlayerId" ColumnName="PlayerId" />
                 <ScalarProperty Name="GameId" ColumnName="GameId" />
@@ -295,6 +471,8 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <EntitySetMapping Name="Groups">
             <EntityTypeMapping TypeName="bigtwoModel.Group">
               <MappingFragment StoreEntitySet="Group">
+                <ScalarProperty Name="PlayChips" ColumnName="PlayChips" />
+                <ScalarProperty Name="ChipsPerCard" ColumnName="ChipsPerCard" />
                 <ScalarProperty Name="ChooseCardTime" ColumnName="ChooseCardTime" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
@@ -310,6 +488,7 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
           <EntitySetMapping Name="Players">
             <EntityTypeMapping TypeName="bigtwoModel.Player">
               <MappingFragment StoreEntitySet="Player">
+                <ScalarProperty Name="Chips" ColumnName="Chips" />
                 <ScalarProperty Name="Id" ColumnName="Id" />
                 <ScalarProperty Name="TelegramId" ColumnName="TelegramId" />
                 <ScalarProperty Name="Name" ColumnName="Name" />
@@ -334,6 +513,28 @@ warning 6002: The table/view 'bigtwo.dbo.NotifyGame' does not have a primary key
               <MappingFragment StoreEntitySet="NotifyGame">
                 <ScalarProperty Name="UserId" ColumnName="UserId" />
                 <ScalarProperty Name="GroupId" ColumnName="GroupId" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ChipsTransactions">
+            <EntityTypeMapping TypeName="bigtwoModel.ChipsTransaction">
+              <MappingFragment StoreEntitySet="ChipsTransaction">
+                <ScalarProperty Name="ChipsTransacted" ColumnName="ChipsTransacted" />
+                <ScalarProperty Name="PlayerId" ColumnName="PlayerId" />
+                <ScalarProperty Name="GamePlayerId" ColumnName="GamePlayerId" />
+                <ScalarProperty Name="GameId" ColumnName="GameId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="C_ChipsLog">
+            <EntityTypeMapping TypeName="bigtwoModel.C_ChipsLog">
+              <MappingFragment StoreEntitySet="_ChipsLog">
+                <ScalarProperty Name="TimeTransacted" ColumnName="TimeTransacted" />
+                <ScalarProperty Name="NewChips" ColumnName="NewChips" />
+                <ScalarProperty Name="OldChips" ColumnName="OldChips" />
+                <ScalarProperty Name="PlayerId" ColumnName="PlayerId" />
+                <ScalarProperty Name="Id" ColumnName="Id" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

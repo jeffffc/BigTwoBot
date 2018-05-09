@@ -14,6 +14,12 @@
         <AssociationConnector Association="bigtwoModel.FK_Game_Group" ManuallyRouted="false" />
         <AssociationConnector Association="bigtwoModel.FK_GamePlayer_Game" ManuallyRouted="false" />
         <AssociationConnector Association="bigtwoModel.FK_GamePlayer_Player" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="bigtwoModel.ChipsTransaction" Width="1.5" PointX="8.5" PointY="3.375" />
+        <AssociationConnector Association="bigtwoModel.FK_ChipsTransaction_Game" />
+        <AssociationConnector Association="bigtwoModel.FK_ChipsTransaction_GamePlayer" />
+        <AssociationConnector Association="bigtwoModel.FK_ChipsTransaction_Player" />
+        <EntityTypeShape EntityType="bigtwoModel.C_ChipsLog" Width="1.5" PointX="5.25" PointY="9.5" />
+        <AssociationConnector Association="bigtwoModel.FK__ChipsLog_Player" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

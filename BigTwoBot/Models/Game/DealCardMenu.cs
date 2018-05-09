@@ -20,6 +20,7 @@ namespace BigTwoBot.Models
         public BTPlayerHand Hand { get; set; }
         public MenuCategory CurrentCategory { get; set; } = MenuCategory.One;
         public List<int> ChosenIndexes = new List<int>();
+        public List<int> LastValidIndexes = new List<int>();
 
         public DealCardMenu()
         {
@@ -78,6 +79,7 @@ namespace BigTwoBot.Models
                 {
                     // footer1.Add(new InlineKeyboardCallbackButton(pokerType.ToString() + chosenText, $"{GameId}|{TelegramId}|card|go|{ChosenIndexes.Select(x => x.ToString()).Aggregate((x, y) => x + "," + y)}"));
                     footer1.Add(new InlineKeyboardCallbackButton(GetTranslation(pokerType.ToString(), Language) + chosenText, $"{GameId}|{TelegramId}|card|go"));
+                    LastValidIndexes = ChosenIndexes;
                 }
                 else
                     footer1.Add(new InlineKeyboardCallbackButton(GetTranslation("Invalid", Language), $"{GameId}|{TelegramId}|card|invalid"));

@@ -273,13 +273,13 @@ namespace BigTwoBot
                 case BTPokerHands.Quadruple:
                     return cards.Count == 5 && cards.HasSameValuedCards(type);
                 case BTPokerHands.Straight:
-                    return cards.HasStraight();
+                    return cards.Count == 5 && cards.HasStraight();
                 case BTPokerHands.Flush:
-                    return cards.HasFlush();
+                    return cards.Count == 5 && cards.HasFlush();
                 case BTPokerHands.FullHouse:
-                    return cards.HasFullHouse();
+                    return cards.Count == 5 && cards.HasFullHouse();
                 case BTPokerHands.StraightFlush:
-                    return cards.HasStraightFlush();
+                    return cards.Count == 5 && cards.HasStraightFlush();
             }
             return true;
         }

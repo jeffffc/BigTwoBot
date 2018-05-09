@@ -78,6 +78,48 @@ namespace BigTwoBot
 
                 }
             }
+            else if (temp[0] == "playchips")
+            {
+                if (temp.Length == 2)
+                {
+                    var menu = Handler.GetConfigPlayChipsMenu(chatId);
+                    // should be group only
+                    var group = Helpers.GetGroup(chatId);
+                    var current = group.PlayChips ?? false;
+                    Bot.Edit(query.Message.Chat.Id, query.Message.MessageId,
+                        GetTranslation("ConfigPlayChipsDetail", GetLanguage(chatId), current == true ? GetTranslation("ConfigYes", GetLanguage(chatId)) : GetTranslation("ConfigNo", GetLanguage(chatId))), menu);
+                }
+                if (temp.Length > 2)
+                {
+                    var chosen = temp[2] == "yes";
+                    Handler.SetPlayChipsConfig(chatId, chosen);
+                    var menu = Handler.GetConfigMenu(chatId);
+                    var toSend = "";
+                    if (!chosen)
+                        toSend = GetTranslation("ReceivedButton", GetLanguage(chatId)) + Environment.NewLine + GetTranslation("WhatToDo", GetLanguage(chatId));
+                    else
+                    {
+                        var group = Helpers.GetGroup(chatId);
+                        var current = group.ChipsPerCard ?? Constants.ChipsPerCard;
+                        toSend = GetTranslation("ConfigChipsAmountDetail", GetLanguage(chatId), current);
+                        menu = Handler.GetChipsAmountMenu(chatId);
+                    }
+                    Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, toSend, menu);
+
+                }
+            }
+            else if (temp[0] == "chips")
+            {
+                if (temp.Length > 2)
+                {
+                    var chosen = int.Parse(temp[2]);
+                    Handler.SetChipsAmountConfig(chatId, chosen);
+                    var menu = Handler.GetConfigMenu(chatId);
+                    var toSend = GetTranslation("ReceivedButton", GetLanguage(chatId)) + Environment.NewLine + GetTranslation("WhatToDo", GetLanguage(chatId));
+                    Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, toSend, menu);
+
+                }
+            }
             else if (temp[0] == "done")
             {
                 Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, GetTranslation("ConfigDone", GetLanguage(chatId)));

@@ -67,6 +67,12 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>BigTwoModel.edmx</DependentUpon>
     </Compile>
+    <Compile Include="ChipsTransaction.cs">
+      <DependentUpon>BigTwoModel.tt</DependentUpon>
+    </Compile>
+    <Compile Include="C_ChipsLog.cs">
+      <DependentUpon>BigTwoModel.tt</DependentUpon>
+    </Compile>
     <Compile Include="Game.cs">
       <DependentUpon>BigTwoModel.tt</DependentUpon>
     </Compile>

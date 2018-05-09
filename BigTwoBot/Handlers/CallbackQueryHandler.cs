@@ -75,6 +75,7 @@ namespace BigTwoBot.Handlers
             if (id < 0)
             {
                 buttons.Add(new InlineKeyboardCallbackButton(GetTranslation("ConfigChooseCardTime", GetLanguage(id)), $"config|choosetime|{id}"));
+                buttons.Add(new InlineKeyboardCallbackButton(GetTranslation("ConfigPlayChips", GetLanguage(id)), $"config|playchips|{id}"));
             }
             buttons.Add(new InlineKeyboardCallbackButton(GetTranslation("ConfigDone", GetLanguage(id)), $"config|done|{id}"));
             var twoMenu = new List<InlineKeyboardButton[]>();
@@ -154,6 +155,48 @@ namespace BigTwoBot.Handlers
                 i++;
             }
             twoMenu.Add(new[] { new InlineKeyboardCallbackButton(GetTranslation("ConfigBack", GetLanguage(id)), $"config|back|{id}") });
+
+            var menu = new InlineKeyboardMarkup(twoMenu.ToArray());
+            return menu;
+        }
+
+        public static InlineKeyboardMarkup GetChipsAmountMenu(long id)
+        {
+            List<InlineKeyboardButton> buttons = new List<InlineKeyboardButton> { };
+            var amount= new string[] { "5", "10", "20", "50", "100" };
+            //base menu
+            foreach (var t in amount)
+                buttons.Add(new InlineKeyboardCallbackButton(t, $"config|chips|{id}|{t}"));
+
+            var twoMenu = new List<InlineKeyboardButton[]>();
+            for (var i = 0; i < buttons.Count; i++)
+            {
+                if (buttons.Count - 1 == i)
+                {
+                    twoMenu.Add(new[] { buttons[i] });
+                }
+                else
+                    twoMenu.Add(new[] { buttons[i], buttons[i + 1] });
+                i++;
+            }
+            twoMenu.Add(new[] { new InlineKeyboardCallbackButton(GetTranslation("ConfigBack", GetLanguage(id)), $"config|back|{id}") });
+
+            var menu = new InlineKeyboardMarkup(twoMenu.ToArray());
+            return menu;
+        }
+
+        public static InlineKeyboardMarkup GetConfigPlayChipsMenu(long id)
+        {
+            List<InlineKeyboardButton> buttons = new List<InlineKeyboardButton> { };
+            //base menu
+            buttons.Add(new InlineKeyboardCallbackButton(GetTranslation("ConfigYes", GetLanguage(id)), $"config|playchips|{id}|yes"));
+            buttons.Add(new InlineKeyboardCallbackButton(GetTranslation("ConfigNo", GetLanguage(id)), $"config|playchips|{id}|no"));
+            buttons.Add(new InlineKeyboardCallbackButton(GetTranslation("ConfigBack", GetLanguage(id)), $"config|back|{id}"));
+            var twoMenu = new List<InlineKeyboardButton[]>();
+            for (var i = 0; i < buttons.Count; i++)
+            {
+                twoMenu.Add(new[] { buttons[i] });
+            }
 
             var menu = new InlineKeyboardMarkup(twoMenu.ToArray());
             return menu;

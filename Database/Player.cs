@@ -18,6 +18,8 @@ namespace Database
         public Player()
         {
             this.GamePlayers = new HashSet<GamePlayer>();
+            this.ChipsTransactions = new HashSet<ChipsTransaction>();
+            this.C_ChipsLog = new HashSet<C_ChipsLog>();
         }
     
         public int Id { get; set; }
@@ -29,8 +31,13 @@ namespace Database
         public string BanReason { get; set; }
         public string Language { get; set; }
         public Nullable<long> Achievements { get; set; }
+        public Nullable<long> Chips { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<GamePlayer> GamePlayers { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<ChipsTransaction> ChipsTransactions { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<C_ChipsLog> C_ChipsLog { get; set; }
     }
 }

@@ -35,12 +35,15 @@ namespace BigTwoBot
         public static int JoinTime = 120;
         public static int JoinTimeMax = 300;
 #if DEBUG
-        public static int ChooseCardTime = 300;
+        public static int ChooseCardTime = 30;
 #else
         public static int ChooseCardTime = 45;
 #endif
         public static int ExtendTime = 30;
         public static int WitnessTime = 15;
+
+        public static int ChipsPerCard = 10;
+        public static int PlayerDefaultChips = 10000;
 
         #endregion
 

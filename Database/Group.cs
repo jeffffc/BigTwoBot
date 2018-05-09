@@ -29,6 +29,8 @@ namespace Database
         public string GroupLink { get; set; }
         public Nullable<System.DateTime> CreatedTime { get; set; }
         public Nullable<int> ChooseCardTime { get; set; }
+        public Nullable<int> ChipsPerCard { get; set; }
+        public Nullable<bool> PlayChips { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Game> Games { get; set; }

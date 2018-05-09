@@ -34,6 +34,8 @@ namespace BigTwoBot
         public Queue<BTPlayer> PlayerQueue = new Queue<BTPlayer>();
         public BTDeck Deck;
         public int ChooseCardTime = Constants.ChooseCardTime;
+        public bool PlayChips = false;
+        public int ChipsPerCard = Constants.ChipsPerCard;
 
         public List<BTCard> CurrentHand = new List<BTCard>();
         public BTPokerHands? CurrentHandType = null;
@@ -78,6 +80,8 @@ namespace BigTwoBot
                 if (DbGroup == null)
                     Bot.RemoveGame(this);
                 ChooseCardTime = DbGroup.ChooseCardTime ?? Constants.ChooseCardTime;
+                PlayChips = DbGroup.PlayChips ?? false;
+                ChipsPerCard = DbGroup.ChipsPerCard ?? Constants.ChipsPerCard;
                 db.SaveChanges();
                 if (GroupLink != null)
                     GroupMarkup = new InlineKeyboardMarkup(
@@ -97,6 +101,8 @@ namespace BigTwoBot
             #endregion
 
             var msg = GetTranslation("NewGame", u.GetName());
+            if (PlayChips)
+                msg += Environment.NewLine + GetTranslation("GameChipsPerCard", ChipsPerCard);
             // beta message
             msg += Environment.NewLine + Environment.NewLine + GetTranslation("Beta");
             Bot.Send(chatId, msg);
@@ -212,7 +218,8 @@ namespace BigTwoBot
                                 GrpId = DbGroup.Id,
                                 GroupId = ChatId,
                                 GroupName = GroupName,
-                                TimeStarted = DateTime.UtcNow
+                                TimeStarted = DateTime.UtcNow,
+                                ChipsPerCard = ChipsPerCard
                             };
                             db.Games.Add(DbGame);
                             db.SaveChanges();
@@ -557,9 +564,48 @@ namespace BigTwoBot
 
         public void EndGame()
         {
-            var p = PlayerQueue.First();
-            var finalMsg = $"{p.GetName()} {GetTranslation("Won")}" + Environment.NewLine + Environment.NewLine + PlayerQueue.GetNumOfCardsString();
+            var winner = PlayerQueue.First();
+            Winner = winner;
+            var finalMsg = $"{winner.GetName()} {GetTranslation("Won")}" + Environment.NewLine + Environment.NewLine;
+            if (!PlayChips)
+                finalMsg += PlayerQueue.GetNumOfCardsString();
+
+            var winnerChips = Players.Select(x => x.CardCount).Sum() * ChipsPerCard;
             Send(finalMsg);
+            finalMsg = "";
+            using (var db = new BigTwoDb())
+            {
+                foreach (var p in Players)
+                {
+                    var dbgp = db.GamePlayers.FirstOrDefault(x => x.GameId == GameId && x.PlayerId == p.Id);
+                    dbgp.Won = p == Winner;
+                    dbgp.CardsLeft = p.CardCount;
+                    db.SaveChanges();
+                    Thread.Sleep(200);
+
+                    if (PlayChips)
+                    {
+                        var dbct = new ChipsTransaction
+                        {
+                            GameId = DbGame.Id,
+                            GamePlayerId = dbgp.Id,
+                            PlayerId = db.Players.FirstOrDefault(x => x.TelegramId == p.TelegramId).Id,
+                            ChipsTransacted = p.CardCount == 0 ? winnerChips : -(p.CardCount * ChipsPerCard)
+                        };
+                        db.ChipsTransactions.Add(dbct);
+                        db.SaveChanges();
+                        finalMsg += $"{p.GetName()} [{dbct.ChipsTransacted?.ToString("+#;-#;0").ToBold()}] - {p.CardCount}\n";
+                        Thread.Sleep(200);
+                    }
+                }
+
+                var g = db.Games.FirstOrDefault(x => x.Id == GameId);
+                g.TimeEnded = DateTime.UtcNow;
+                db.SaveChanges();
+
+            }
+            Send(finalMsg);
+
         }
 
         public void NotifyNextGamePlayers()
@@ -720,6 +766,16 @@ namespace BigTwoBot
             return new InlineKeyboardMarkup(rows.ToArray());
         }
 
+        public InlineKeyboardMarkup GetRefreshMarkup(BTPlayer p)
+        {
+            return new InlineKeyboardMarkup(
+                new InlineKeyboardButton[][] {
+                    new InlineKeyboardButton[] {
+                        new InlineKeyboardCallbackButton(GetTranslation("Refresh"), $"{this.Id.ToString()}|{p.TelegramId}|refresh")
+                    }
+                }
+            );
+        }
         #endregion
 
 
@@ -774,10 +830,12 @@ namespace BigTwoBot
                     if (Phase == GamePhase.InGame)
                     {
                         var p = Players.FirstOrDefault(x => x.TelegramId == msg.From.Id);
-                        if (SendPM(p, GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString(), GroupMarkup) != null)
+                        p.DeckText = GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString();
+                        if (SendPM(p, p.DeckText, GetRefreshMarkup(p)) != null)
                             msg.Reply(GetTranslation("SentPM"), BotMarkup);
                     }
                     break;
+
             }
 
         }
@@ -817,7 +875,7 @@ namespace BigTwoBot
                         }
                         else if (chosen == "go")
                         {
-                            var chosenCards = p.Hand.Cards.Where(x => p.DealCardMenu.ChosenIndexes.Contains(x.Index)).ToList();
+                            var chosenCards = p.Hand.Cards.Where(x => p.DealCardMenu.LastValidIndexes.Contains(x.Index)).ToList();
                             if (p.FirstPlayer && !chosenCards.Any(x => x.GameValue == 3 && x.Suit == BTCardSuit.Diamonds))
                             {
                                 Bot.Api.AnswerCallbackQueryAsync(query.Id, GetTranslation("MustUseDiamondThree"), true);
@@ -858,6 +916,21 @@ namespace BigTwoBot
                         }
                         Bot.Api.EditMessageReplyMarkupAsync(query.Message.Chat.Id, query.Message.MessageId, p.DealCardMenu.MarkUp);
 
+                        break;
+                    case "refresh":
+                        if (Phase == GamePhase.InGame)
+                        {
+                            var txt = GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString();
+                            if (txt != p.DeckText)
+                            {
+                                p.DeckText = txt;
+                                Bot.Edit(query.Message.Chat.Id, query.Message.MessageId, txt, GetRefreshMarkup(p));
+                            }
+                            else
+                            {
+                                BotMethods.AnswerCallback(query, GetTranslation("CardsNoChange"), true);
+                            }
+                        }
                         break;
                 }
             }

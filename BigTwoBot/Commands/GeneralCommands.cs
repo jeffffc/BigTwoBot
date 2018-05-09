@@ -227,5 +227,29 @@ namespace BigTwoBot
             Bot.Send(msg.Chat.Id, GetTranslation("Runinfo", GetLanguage(msg.Chat.Id), uptime, gamecount, playercount));
         }
 
+        [Command(Trigger = "mychips")]
+        public static void MyChips(Message msg, string[] args)
+        {
+            using (var db = new BigTwoDb())
+            {
+                var p = db.Players.FirstOrDefault(x => x.TelegramId == msg.From.Id);
+                if (p == null)
+                    return;
+                var chips = p.Chips;
+                try
+                {
+                    if (msg.Chat.Type != ChatType.Private)
+                    {
+                        msg.ReplyPM(chips.ToString());
+                    }
+                    else
+                        msg.Reply(chips.ToString());
+                }
+                catch
+                {
+                    //
+                }
+            }
+        }
     }
 }

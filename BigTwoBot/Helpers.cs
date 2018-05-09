@@ -87,7 +87,8 @@ namespace BigTwoBot
                 CreatedBy = "Command",
                 CreatedTime = DateTime.UtcNow,
                 UserName = chat.Username,
-                GroupLink = chat.Username == "" ? $"https://telegram.me/{chat.Username}" : null
+                GroupLink = chat.Username == "" ? $"https://telegram.me/{chat.Username}" : null,
+                ChipsPerCard = Constants.ChipsPerCard
             };
         }
 
@@ -98,7 +99,8 @@ namespace BigTwoBot
                 Name = user.FirstName,
                 TelegramId = user.Id,
                 UserName = user.Username,
-                Language = "English"
+                Language = "English",
+                Chips = Constants.PlayerDefaultChips
             };
         }
 

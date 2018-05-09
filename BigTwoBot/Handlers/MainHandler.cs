@@ -166,5 +166,29 @@ namespace BigTwoBot.Handlers
                 db.SaveChanges();
             }
         }
+
+        public static void SetPlayChipsConfig(long chatId, bool playChips)
+        {
+            using (var db = new BigTwoDb())
+            {
+                var grp = db.Groups.FirstOrDefault(x => x.GroupId == chatId);
+                if (grp == null)
+                    return;
+                grp.PlayChips = playChips;
+                db.SaveChanges();
+            }
+        }
+
+        public static void SetChipsAmountConfig(long chatId, int chips)
+        {
+            using (var db = new BigTwoDb())
+            {
+                var grp = db.Groups.FirstOrDefault(x => x.GroupId == chatId);
+                if (grp == null)
+                    return;
+                grp.ChipsPerCard = chips;
+                db.SaveChanges();
+            }
+        }
+        }
     }
-}
