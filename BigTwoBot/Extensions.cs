@@ -197,6 +197,11 @@ namespace BigTwoBot
         }
 
         // card values checking
+        public static HandComparison CompareHandWith(this IEnumerable<BTCard> hand, IEnumerable<BTCard> toBeCompared)
+        {
+            return hand.ToList().CompareHandWith(toBeCompared.ToList());
+        }
+
         public static HandComparison CompareHandWith(this List<BTCard> hand, List<BTCard> toBeCompared)
         {
             if (toBeCompared == null || toBeCompared.Count() == 0)

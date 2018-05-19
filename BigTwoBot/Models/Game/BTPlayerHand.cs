@@ -95,7 +95,16 @@ namespace BigTwoBot.Models
 
             return matchingCards;
         }
-        
+
+        public IEnumerable<IGrouping<int, BTCard>> GetSameGameValuedCards(BTPokerHands type)
+        {
+            IEnumerable<IGrouping<int, BTCard>> matchingCards = this
+                .GroupBy(c => c.GameValue)
+                .Where(g => g.Count() == (int)type + 1);
+
+            return matchingCards;
+        }
+
 
         public bool IsCardPartOfStrongerHand(BTCard BTCard)
         {

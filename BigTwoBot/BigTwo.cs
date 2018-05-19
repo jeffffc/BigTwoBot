@@ -42,8 +42,8 @@ namespace BigTwoBot
         public BTPlayer CurrentDealer;
 
         public BTPlayer Winner;
-        public bool BigTwoDealt = false;
-        public BTPlayer BigTwoDealtBy;
+        public bool CurrentLargestDealt = false;
+        public BTPlayer CurrentLargestDealtBy;
 
         public InlineKeyboardMarkup GroupMarkup = null;
         public InlineKeyboardMarkup BotMarkup;
@@ -246,7 +246,7 @@ namespace BigTwoBot
                         #region Start!
                         foreach (var player in Players)
                         {
-                            // SendPM(player, GetPlayerInitialCards(player.CardsInHand));
+                            SendDeck(player);
                         }
                         while (Phase != GamePhase.Ending)
                         {
@@ -254,8 +254,8 @@ namespace BigTwoBot
                             PlayersChooseCard();
                             if (Phase == GamePhase.Ending)
                                 break;
-                            if (BigTwoDealt)
-                                NextPlayerAfterBigTwo(BigTwoDealtBy);
+                            if (CurrentLargestDealt)
+                                NextPlayerAfterCurrentLargest(CurrentLargestDealtBy);
                             else
                                 NextPlayer();
                         }
@@ -298,13 +298,14 @@ namespace BigTwoBot
                 var DbPlayer = db.Players.FirstOrDefault(x => x.TelegramId == u.Id);
                 if (DbPlayer == null)
                 {
-                    DbPlayer = new Player
-                    {
-                        TelegramId = u.Id,
-                        Name = u.FirstName,
-                        Language = "English"
-                    };
+                    DbPlayer = Helpers.MakeDefaultPlayer(u);
                     db.Players.Add(DbPlayer);
+                    db.SaveChanges();
+                }
+                else
+                {
+                    DbPlayer.Name = u.FirstName;
+                    DbPlayer.UserName = u.Username;
                     db.SaveChanges();
                 }
                 BTPlayer p = new BTPlayer(u, DbPlayer.Id);
@@ -432,8 +433,8 @@ namespace BigTwoBot
                     Phase = GamePhase.Ending;
                 if (Phase == GamePhase.Ending) return;
 
-                BigTwoDealt = false;
-                BigTwoDealtBy = null;
+                CurrentLargestDealt = false;
+                CurrentLargestDealtBy = null;
 
 
                 var p = PlayerQueue.First();
@@ -483,13 +484,29 @@ namespace BigTwoBot
                     Phase = GamePhase.Ending;
                 }
 
-                if (CurrentHand.Count == 1 && CurrentHand.First().Value == 2 && CurrentHand.First().Suit == BTCardSuit.Spades)
+                // Single Card and it's the largest
+                // old
+                // if (CurrentHand.Count == 1 && CurrentHand.First().Value == 2 && CurrentHand.First().Suit == BTCardSuit.Spades)
+                if (CurrentHand.Count == 1 && Players.All(x => x.Hand.Cards.All(y => y < CurrentHand.First())))
                 {
-                    Send("");
-                    BigTwoDealt = true;
-                    BigTwoDealtBy = p;
-                    return;
+                    // Send("");
+                    CurrentLargestDealt = true;
+                    CurrentLargestDealtBy = p;
+                    // return;
                 }
+                // check for pairs too
+                /* to do
+                if (CurrentHand.Count == 2 && Players.All(x => x.Hand.GetSameGameValuedCards(BTPokerHands.Double).OrderByDescending(y => y.Key).First().CompareHandWith(CurrentHand).Success == false))
+                // if (CurrentHand.Count == 2)
+                {
+                    {
+                        Send("");
+                        CurrentLargestDealt = true;
+                        CurrentLargestDealtBy = p;
+                        // return;
+                    }
+                }
+                */
 
                 CleanPlayers();
             }
@@ -507,7 +524,7 @@ namespace BigTwoBot
             PlayerQueue.Enqueue(p);
         }
 
-        public void NextPlayerAfterBigTwo(BTPlayer p)
+        public void NextPlayerAfterCurrentLargest(BTPlayer p)
         {
             while (PlayerQueue.First() != p)
                 NextPlayer();
@@ -518,14 +535,14 @@ namespace BigTwoBot
             var tempPlayerList = Players.Shuffle(10);
             PlayerQueue = new Queue<BTPlayer>(tempPlayerList);
 
-            // Shuffle the cards before assigning to players
-            Deck.Shuffle(10);
-
             bool ok = false;
-
+            int a = 1;
             while (!ok)
             // assign cards to players
             {
+                // Shuffle the cards before assigning to players
+                Deck.Shuffle(10);
+
                 foreach (var p in Players)
                     p.Hand.Clear();
                 for (int i = 0; i < Deck.Count; i += 4)
@@ -540,7 +557,9 @@ namespace BigTwoBot
                 {
                     ok = true;
                 }
+                a += 1;
             }
+
 
             // Sort their cards, create menu
             foreach (BTPlayer p in Players)
@@ -549,10 +568,10 @@ namespace BigTwoBot
                 p.DealCardMenu = new DealCardMenu(p, Id, ChatId);
             }
 
-#if DEBUG
-            while (PlayerQueue.First().TelegramId != 106665913) NextPlayer();
-#else
             while (!PlayerQueue.First().Hand.Any(x => x.Value == 3 && x.Suit == BTCardSuit.Diamonds)) NextPlayer();
+
+#if DEBUG
+            // while (PlayerQueue.First().TelegramId != 106665913) NextPlayer();
 #endif
 
             // set first player, avoid not using diamond 3
@@ -606,6 +625,13 @@ namespace BigTwoBot
             }
             Send(finalMsg);
 
+        }
+
+        public void SendDeck(BTPlayer p, Message msg = null)
+        {
+            p.DeckText = GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString();
+            if (SendPM(p, p.DeckText, GetRefreshMarkup(p)) != null && msg != null)
+                msg.Reply(GetTranslation("SentPM"), BotMarkup);
         }
 
         public void NotifyNextGamePlayers()
@@ -830,9 +856,7 @@ namespace BigTwoBot
                     if (Phase == GamePhase.InGame)
                     {
                         var p = Players.FirstOrDefault(x => x.TelegramId == msg.From.Id);
-                        p.DeckText = GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString();
-                        if (SendPM(p, p.DeckText, GetRefreshMarkup(p)) != null)
-                            msg.Reply(GetTranslation("SentPM"), BotMarkup);
+                        SendDeck(p, msg);
                     }
                     break;
 
@@ -840,6 +864,7 @@ namespace BigTwoBot
 
         }
 
+        
         public void HandleQuery(CallbackQuery query, string[] args)
         {
             try
