@@ -128,6 +128,8 @@ namespace BigTwoBot
 #endif
                     for (var i = 0; i < JoinTime; i++)
                     {
+                        if (Players.Count == 4)
+                            break;
                         if (this.Phase == GamePhase.InGame)
                             break;
                         if (this.Phase == GamePhase.Ending)
@@ -536,7 +538,6 @@ namespace BigTwoBot
             PlayerQueue = new Queue<BTPlayer>(tempPlayerList);
 
             bool ok = false;
-            int a = 1;
             while (!ok)
             // assign cards to players
             {
@@ -557,7 +558,6 @@ namespace BigTwoBot
                 {
                     ok = true;
                 }
-                a += 1;
             }
 
 
@@ -931,6 +931,11 @@ namespace BigTwoBot
                         else if (chosen == "reset")
                         {
                             p.UpdateChosenIndexes(empty: true);
+                        }
+                        else if (chosen == "sort")
+                        {
+                            p.DealCardMenu.SortBySuit = !p.DealCardMenu.SortBySuit;
+                            p.DealCardMenu.UpdateMenu();
                         }
                         else
                         {

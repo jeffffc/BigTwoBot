@@ -126,5 +126,15 @@ namespace BigTwoBot.Models
             // not part of stronger hand.
             return isAtleastPair;
         }
+
+        public void SortBySuit()
+        {
+            cards = cards.OrderBy(x => x.Suit).ThenBy(x => x.GameValue).ToList();
+        }
+
+        public void SortByNumber()
+        {
+            cards = cards.OrderBy(x => x.GameValue).ThenBy(x => x.Suit).ToList();
+        }
     }
 }

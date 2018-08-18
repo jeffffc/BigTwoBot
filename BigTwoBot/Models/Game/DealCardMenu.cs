@@ -21,6 +21,7 @@ namespace BigTwoBot.Models
         public MenuCategory CurrentCategory { get; set; } = MenuCategory.One;
         public List<int> ChosenIndexes = new List<int>();
         public List<int> LastValidIndexes = new List<int>();
+        public bool SortBySuit { get; set; } = false;
 
         public DealCardMenu()
         {
@@ -47,6 +48,12 @@ namespace BigTwoBot.Models
         public void UpdateMenu()
         {
             BTPlayerHand hand = Hand;
+
+            if (SortBySuit)
+                hand.SortBySuit();
+            else
+                hand.SortByNumber();
+
             var rows = new List<InlineKeyboardButton[]>();
 
             var cardButtons = new List<Tuple<string, string>>();
@@ -60,6 +67,7 @@ namespace BigTwoBot.Models
 
             
             var row = new List<InlineKeyboardButton>();
+
             for (int i = 0; i < cardButtons.Count; i += 5)
             {
                 row.Clear();
@@ -88,6 +96,7 @@ namespace BigTwoBot.Models
                 footer1.Add(new InlineKeyboardCallbackButton(GetTranslation("ChooseCardButton", Language), $"{GameId}|{TelegramId}|card|dummy"));
             var footer2 = new List<InlineKeyboardButton>();
             footer2.Add(new InlineKeyboardCallbackButton(GetTranslation("Pass", Language), $"{GameId}|{TelegramId}|card|skip"));
+            footer2.Add(new InlineKeyboardCallbackButton(GetTranslation(!SortBySuit ? "SortBySuit" : "SortByNumber", Language), $"{GameId}|{TelegramId}|card|sort"));
             footer2.Add(new InlineKeyboardCallbackButton(GetTranslation("Reset", Language), $"{GameId}|{TelegramId}|card|reset"));
 
             rows.Add(footer1.ToArray());
