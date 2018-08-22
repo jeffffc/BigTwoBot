@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
+using TelegramBotApi.Types;
 
 namespace BigTwoBot.Models
 {
@@ -36,6 +36,7 @@ namespace BigTwoBot.Models
         public int? Choice { get; set; } = null;
         public QuestionAsked CurrentQuestion { get; set; } = null;
         public string DeckText { get; set; }
+        public Message FirstDeckMessage { get; set; }
 
         public void AddCard(BTCard BTCard)
         {

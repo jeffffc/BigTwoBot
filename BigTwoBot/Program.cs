@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot;
-using Telegram.Bot.Args;
+using TelegramBotApi;
 using System.Runtime.Caching;
 using BigTwoBot.Handlers;
 using BigTwoBot.Models;
@@ -37,7 +36,7 @@ namespace BigTwoBot
                 Constants.cardImages.Add(Image.FromFile(Path.Combine(Constants._imagePath, $"{i}.png")));
             */
 
-            Bot.Api = new TelegramBotClient(Constants.GetBotToken("BotToken"));
+            Bot.Api = new TelegramBot(Constants.GetBotToken("BotToken"));
             Bot.Me = Bot.Api.GetMeAsync().Result;
 
             Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
@@ -73,7 +72,7 @@ namespace BigTwoBot
             English = Helpers.ReadEnglish();
             Langs = Helpers.ReadLanguageFiles();
 
-            Bot.Api.GetUpdatesAsync(-1).Wait();
+            Bot.Api.GetUpdatesAsync(offset: -1).Wait();
             Handler.HandleUpdates(Bot.Api);
             Bot.Api.StartReceiving();
             Startup = DateTime.Now;

@@ -10,10 +10,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InlineKeyboardButtons;
-using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotApi.Types;
+using TelegramBotApi.Enums;
+using TelegramBotApi.Types.Markup;
 
 namespace BigTwoBot
 {
@@ -108,7 +107,7 @@ namespace BigTwoBot
         {
             var row = new List<InlineKeyboardButton>();
             var rows = new List<InlineKeyboardButton[]>();
-            row.Add(new InlineKeyboardUrlButton(GetTranslation("StartMe", lang), $"https://telegram.me/{Bot.Me.Username}"));
+            row.Add(new InlineKeyboardButton(GetTranslation("StartMe", lang)) { Url = $"https://telegram.me/{Bot.Me.Username}" });
             rows.Add(row.ToArray());
             return new InlineKeyboardMarkup(rows.ToArray());
         }
@@ -318,8 +317,8 @@ namespace BigTwoBot
                 //load up each file and get the names
                 var buttons = new[]
                 {
-                    new InlineKeyboardCallbackButton($"New", $"upload|{id}|{newFile.FileName}"),
-                    new InlineKeyboardCallbackButton($"Old", $"upload|{id}|current")
+                    new InlineKeyboardButton($"New"){ CallbackData = $"upload|{id}|{newFile.FileName}" },
+                    new InlineKeyboardButton($"Old"){ CallbackData = $"upload|{id}|current" }
                 };
                 var menu = new InlineKeyboardMarkup(buttons.ToArray());
                 Bot.Api.SendTextMessageAsync(id, "Which file do you want to keep?", replyToMessageId: msgID,

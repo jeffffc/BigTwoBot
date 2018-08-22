@@ -5,8 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
+using TelegramBotApi.Types;
+using TelegramBotApi.Enums;
 using static BigTwoBot.Helpers;
 
 namespace BigTwoBot
@@ -28,7 +28,9 @@ namespace BigTwoBot
                 // see if he started bot
                 try
                 {
-                    Bot.Api.SendChatActionAsync(msg.From.Id, ChatAction.Typing).Wait();
+                    // Bot.Api.SendChatActionAsync(msg.From.Id, ChatAction.Typing).Wait();
+                    var t = Bot.Api.SendTextMessage(msg.From.Id, "test", disableNotification: true);
+                    Bot.Api.DeleteMessage(msg.From.Id, t.MessageId);
                     Bot.AddGame(new BigTwo(msg.Chat.Id, msg.From, msg.Chat.Title, msg.Chat.Username));
                 }
                 catch (Exception e)

@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot.Types.InlineKeyboardButtons;
-using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotApi.Types.Markup;
 using static BigTwoBot.Helpers;
 
 namespace BigTwoBot.Models
@@ -65,7 +64,7 @@ namespace BigTwoBot.Models
                     cardButtons.Add(new Tuple<string, string>(card.GetCardName(), $"{GameId}|{TelegramId}|card|{card.Index}"));
             }
 
-            
+
             var row = new List<InlineKeyboardButton>();
 
             for (int i = 0; i < cardButtons.Count; i += 5)
@@ -73,31 +72,31 @@ namespace BigTwoBot.Models
                 row.Clear();
                 var subButtons = cardButtons.Skip(i).Take(5).ToList();
                 foreach (var button in subButtons)
-                    row.Add(new InlineKeyboardCallbackButton(button.Item1, button.Item2));
+                    row.Add(new InlineKeyboardButton(button.Item1) { CallbackData = button.Item2 });
                 rows.Add(row.ToArray());
             }
 
             var footer1 = new List<InlineKeyboardButton>();
             if (ChosenIndexes.Count > 0)
             {
-                var chosen = Hand.Cards.Where(x => ChosenIndexes.Contains(x.Index)).ToList();
+                var chosen = Hand.Cards.Where(x => ChosenIndexes.Contains(x.Index)).OrderBy(x => x.GameValue).ToList();
                 var chosenText = chosen.Select(x => x.GetName()).Aggregate((x, y) => x + " " + y);
                 var pokerType = chosen.CheckChosenCards();
                 if (pokerType != null)
                 {
                     // footer1.Add(new InlineKeyboardCallbackButton(pokerType.ToString() + chosenText, $"{GameId}|{TelegramId}|card|go|{ChosenIndexes.Select(x => x.ToString()).Aggregate((x, y) => x + "," + y)}"));
-                    footer1.Add(new InlineKeyboardCallbackButton(GetTranslation(pokerType.ToString(), Language) + chosenText, $"{GameId}|{TelegramId}|card|go"));
+                    footer1.Add(new InlineKeyboardButton(GetTranslation(pokerType.ToString(), Language) + chosenText) { CallbackData = $"{GameId}|{TelegramId}|card|go" });
                     LastValidIndexes = ChosenIndexes;
                 }
                 else
-                    footer1.Add(new InlineKeyboardCallbackButton(GetTranslation("Invalid", Language), $"{GameId}|{TelegramId}|card|invalid"));
+                    footer1.Add(new InlineKeyboardButton(GetTranslation("Invalid", Language)) { CallbackData = $"{GameId}|{TelegramId}|card|invalid" });
             }
             else
-                footer1.Add(new InlineKeyboardCallbackButton(GetTranslation("ChooseCardButton", Language), $"{GameId}|{TelegramId}|card|dummy"));
+                footer1.Add(new InlineKeyboardButton(GetTranslation("ChooseCardButton", Language)){CallbackData = $"{GameId}|{TelegramId}|card|dummy" });
             var footer2 = new List<InlineKeyboardButton>();
-            footer2.Add(new InlineKeyboardCallbackButton(GetTranslation("Pass", Language), $"{GameId}|{TelegramId}|card|skip"));
-            footer2.Add(new InlineKeyboardCallbackButton(GetTranslation(!SortBySuit ? "SortBySuit" : "SortByNumber", Language), $"{GameId}|{TelegramId}|card|sort"));
-            footer2.Add(new InlineKeyboardCallbackButton(GetTranslation("Reset", Language), $"{GameId}|{TelegramId}|card|reset"));
+            footer2.Add(new InlineKeyboardButton(GetTranslation("Pass", Language)) { CallbackData = $"{GameId}|{TelegramId}|card|skip" });
+            footer2.Add(new InlineKeyboardButton(GetTranslation(!SortBySuit ? "SortBySuit" : "SortByNumber", Language)) { CallbackData = $"{GameId}|{TelegramId}|card|sort" });
+            footer2.Add(new InlineKeyboardButton(GetTranslation("Reset", Language)) { CallbackData = $"{GameId}|{TelegramId}|card|reset" });
 
             rows.Add(footer1.ToArray());
             rows.Add(footer2.ToArray());

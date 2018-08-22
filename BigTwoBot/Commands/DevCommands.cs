@@ -8,9 +8,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
+using TelegramBotApi.Types;
 using Database;
-using Telegram.Bot.Types.Enums;
+using TelegramBotApi.Enums;
 using static BigTwoBot.Helpers;
 
 namespace BigTwoBot
@@ -104,7 +104,7 @@ namespace BigTwoBot
             try
             {
                 var id = msg.Chat.Id;
-                if (msg.ReplyToMessage?.Type != MessageType.DocumentMessage)
+                if (msg.ReplyToMessage?.Type != MessageType.Document)
                 {
                     Bot.Send(id, "Please reply to the file with /uploadlang");
                     return;
@@ -117,7 +117,7 @@ namespace BigTwoBot
             }
             catch (Exception e)
             {
-                Bot.Send(msg.Chat.Id, e.Message, parseMode: ParseMode.Default);
+                Bot.Send(msg.Chat.Id, e.Message, parseMode: ParseMode.Html);
             }
         }
 

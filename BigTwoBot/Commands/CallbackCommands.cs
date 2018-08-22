@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
+using TelegramBotApi.Types;
 using Database;
 using BigTwoBot.Handlers;
 using static BigTwoBot.Helpers;

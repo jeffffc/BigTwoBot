@@ -4,23 +4,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot;
-using Telegram.Bot.Args;
-using Telegram.Bot.Types;
+using TelegramBotApi;
+using TelegramBotApi.Types;
+using TelegramBotApi.Types.Events;
 
 namespace BigTwoBot.Handlers
 {
     partial class Handler
     {
-        public static void HandleUpdates(ITelegramBotClient Bot)
+        public static void HandleUpdates(TelegramBot Bot)
         {
             Bot.OnCallbackQuery += BotOnCallbackQueryReceived;
             Bot.OnMessage += BotOnMessageReceived;
-            Bot.OnMessageEdited += BotOnMessageReceived;
+            Bot.OnMessageEdited += BotOnEditedMessageReceived;
             Bot.OnInlineQuery += BotOnInlineQueryReceived;
-            Bot.OnInlineResultChosen += BotOnChosenInlineResultReceived;
+            Bot.OnChosenInlineResult += BotOnChosenInlineResultReceived;
             Bot.OnUpdate += BotOnUpdateReceived;
-            Bot.OnReceiveError += BotOnReceiveError;
         }
 
 
@@ -52,15 +51,16 @@ namespace BigTwoBot.Handlers
             new Task(() => { Handler.HandleMessage(e.Message); }).Start();
         }
 
+        private static void BotOnEditedMessageReceived(object sender, EditedMessageEventArgs e)
+        {
+            new Task(() => { Handler.HandleMessage(e.EditedMessage); }).Start();
+        }
+
         private static void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs e)
         {
             new Task(() => { Handler.HandleQuery(e.CallbackQuery); }).Start();
         }
 
-        private static void BotOnReceiveError(object sender, ReceiveErrorEventArgs receiveErrorEventArgs)
-        {
-            receiveErrorEventArgs.ApiRequestException.LogError();
-        }
 
         private static string GetTranslation(string key, string language, params object[] args)
         {

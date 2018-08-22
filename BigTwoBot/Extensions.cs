@@ -7,8 +7,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
+using TelegramBotApi.Types;
+using TelegramBotApi.Enums;
 using System.ComponentModel;
 using MoreLinq;
 
@@ -71,7 +71,7 @@ namespace BigTwoBot
 
             m += trace;
 
-            Bot.Send(Constants.LogGroupId, m, parseMode: ParseMode.Default);
+            Bot.Send(Constants.LogGroupId, m, parseMode: ParseMode.Html);
         }
 
         // Player Extensions

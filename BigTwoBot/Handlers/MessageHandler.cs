@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
+using TelegramBotApi.Types;
+using TelegramBotApi.Enums;
 using BigTwoBot;
 using Database;
 
@@ -16,7 +16,7 @@ namespace BigTwoBot.Handlers
         {
             switch (msg.Type)
             {
-                case MessageType.TextMessage:
+                case MessageType.Text:
                     string text = msg.Text;
                     string[] args = text.Contains(' ')
                                     ? new[] { text.Split(' ')[0].ToLower(), text.Remove(0, text.IndexOf(' ') + 1) }
@@ -65,9 +65,6 @@ namespace BigTwoBot.Handlers
                         }
                     }
                     break;
-                case MessageType.ServiceMessage:
-                    //
-                    break;
                     /*
                 case MessageType.SuccessfulPayment:
                     var randomRef = Guid.NewGuid().ToString();
@@ -90,6 +87,8 @@ namespace BigTwoBot.Handlers
                     Bot.Send(Constants.LogGroupId, $"Donation from user <a href='tg://user?id={msg.From.Id}'>{msg.From.FirstName.FormatHTML()}</a>.\nAmount: {msg.SuccessfulPayment.TotalAmount / 100} HKD\nReference: {randomRef}");
                     break;
                     */
+                default:
+                    break;
             }
         }
 

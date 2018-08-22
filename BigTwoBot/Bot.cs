@@ -5,17 +5,18 @@ using System.Linq;
 using System.Runtime.Caching;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InlineKeyboardButtons;
-using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotApi;
+using TelegramBotApi.Types;
+using TelegramBotApi.Types.Markup;
+using TelegramBotApi.Enums;
+using TelegramBotApi.Types.Upload;
+using TelegramBotApi.Types.Exceptions;
 
 namespace BigTwoBot
 {
     public class Bot
     {
-        public static ITelegramBotClient Api;
+        public static TelegramBot Api;
         public static User Me;
 
         internal static HashSet<Models.Command> Commands = new HashSet<Models.Command>();
@@ -24,22 +25,22 @@ namespace BigTwoBot
         public delegate void CallbackMethod(CallbackQuery query, string[] args);
 
 
-        internal static Message Send(long chatId, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        internal static Message Send(long chatId, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             return BotMethods.Send(chatId, text, replyMarkup, parseMode, disableWebPagePreview, disableNotification);
         }
 
-        internal static Message SendSticker(long chatId, string fileId, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        internal static Message SendSticker(long chatId, string fileId, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             return BotMethods.SendSticker(chatId, fileId, replyMarkup, disableNotification);
         }
 
-        internal static Message SendSticker(long chatId, FileToSend sticker, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        internal static Message SendSticker(long chatId, SendFile sticker, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             return BotMethods.SendSticker(chatId, sticker, replyMarkup, disableNotification);
         }
 
-        internal static Message Edit(long chatId, int oldMessageId, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        internal static Message Edit(long chatId, int oldMessageId, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             try
             {
@@ -121,13 +122,13 @@ namespace BigTwoBot
     public static class BotMethods
     {
         #region Messages
-        public static Message Send(long chatId, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        public static Message Send(long chatId, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             return Bot.Api.SendTextMessageAsync(chatId, text, parseMode, disableWebPagePreview, disableNotification, 0, replyMarkup).Result;
 
         }
 
-        public static Message Send(this Chat chat, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        public static Message Send(this Chat chat, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             try
             {
@@ -140,17 +141,17 @@ namespace BigTwoBot
             }
         }
 
-        public static Message SendSticker(long chatId, string fileId, IReplyMarkup replyMarkup = null, bool disableNotification = false)
+        public static Message SendSticker(long chatId, string fileId, ReplyMarkupBase replyMarkup = null, bool disableNotification = false)
         {
-            return Bot.Api.SendStickerAsync(chatId, new FileToSend(fileId), disableNotification, 0, replyMarkup).Result;
+            return Bot.Api.SendStickerAsync(chatId, new SendFileId(fileId), disableNotification, 0, replyMarkup).Result;
         }
 
-        public static Message SendSticker(long chatId, FileToSend sticker, IReplyMarkup replyMarkup = null, bool disableNotification = false)
+        public static Message SendSticker(long chatId, SendFile sticker, ReplyMarkupBase replyMarkup = null, bool disableNotification = false)
         {
             return Bot.Api.SendStickerAsync(chatId, sticker, disableNotification, 0, replyMarkup).Result;
         }
 
-        public static Message Reply(this Message m, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        public static Message Reply(this Message m, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             try
             {
@@ -163,7 +164,7 @@ namespace BigTwoBot
             }
         }
 
-        public static Message Reply(long chatId, int oldMessageId, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        public static Message Reply(long chatId, int oldMessageId, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             try
             {
@@ -176,7 +177,7 @@ namespace BigTwoBot
             }
         }
 
-        public static Message ReplyNoQuote(this Message m, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        public static Message ReplyNoQuote(this Message m, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             try
             {
@@ -189,16 +190,19 @@ namespace BigTwoBot
             }
         }
 
-        public static Message ReplyPM(this Message m, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        public static Message ReplyPM(this Message m, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             try
             {
                 var r = Bot.Api.SendTextMessageAsync(m.From.Id, text, parseMode, disableWebPagePreview, disableNotification, 0, replyMarkup).Result;
                 if (r == null)
                 {
-                    return m.Reply(Helpers.GetTranslation("NotStartedBot", Helpers.GetLanguage(m.From.Id)), new InlineKeyboardMarkup(new InlineKeyboardButton[] {
-                        new InlineKeyboardUrlButton(Helpers.GetTranslation("StartMe", Helpers.GetLanguage(m.From.Id)), $"https://t.me/{Bot.Me.Username}") }));
+                    return m.Reply(Helpers.GetTranslation("NotStartedBot", Helpers.GetLanguage(m.From.Id)),
+                        new ReplyMarkupMaker(ReplyMarkupMaker.ReplyMarkupType.Inline).AddRow().AddCallbackButton(
+                            Helpers.GetTranslation("StartMe", Helpers.GetLanguage(m.From.Id)),
+                            $"https://t.me/{Bot.Me.Username}", 0));
                 }
+                
                 return m.Reply(Helpers.GetTranslation("SentPM", Helpers.GetLanguage(m.From.Id)));
             }
             catch (Exception e)
@@ -208,19 +212,24 @@ namespace BigTwoBot
             }
         }
 
-        public static Message Edit(string text, Message msg, InlineKeyboardMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true)
+        public static Message Edit(string text, Message msg, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true)
         {
             return Edit(msg.Chat.Id, msg.MessageId, text, replyMarkup, parseMode, disableWebPagePreview);
         }
 
 
-        public static Message Edit(long chatId, int oldMessageId, string text, IReplyMarkup replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
+        public static Message Edit(long chatId, int oldMessageId, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
         {
             try
             {
-                var t = Bot.Api.EditMessageTextAsync(chatId, oldMessageId, text, parseMode, disableWebPagePreview, replyMarkup);
+                var t = Bot.Api.EditMessageTextAsync(chatId, oldMessageId, text, parseMode, disableWebPagePreview, (InlineKeyboardMarkup)replyMarkup);
                 t.Wait();
                 return t.Result;
+            }
+            catch (ApiRequestException ex)
+            {
+                ex.LogError();
+                return null;
             }
             catch (Exception e)
             {
@@ -240,11 +249,11 @@ namespace BigTwoBot
             }
         }
 
-        public static Message SendDocument(long chatId, FileToSend fileToSend, string caption = null, IReplyMarkup replyMarkup = null, bool disableNotification = false)
+        public static Message SendDocument(long chatId, SendFile SendFile, string caption = null, ReplyMarkupBase replyMarkup = null, bool disableNotification = false, ParseMode parseMode = ParseMode.None)
         {
             try
             {
-                return Bot.Api.SendDocumentAsync(chatId, fileToSend, caption, disableNotification, 0, replyMarkup).Result;
+                return Bot.Api.SendDocumentAsync(chatId, SendFile, caption, parseMode, disableNotification, 0, replyMarkup).Result;
             }
             catch (Exception e)
             {

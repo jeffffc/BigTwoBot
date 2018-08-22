@@ -3,15 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Telegram.Bot.Types;
-using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotApi.Types;
+using TelegramBotApi.Types.Markup;
 using BigTwoBot.Models;
 using BigTwoBot;
 using System.Threading;
 using Database;
 using System.Diagnostics;
 using System.IO;
-using Telegram.Bot.Types.InlineKeyboardButtons;
 using System.Xml.Linq;
 using static BigTwoBot.Helpers;
 using ConsoleTables;
@@ -45,8 +44,8 @@ namespace BigTwoBot
         public bool CurrentLargestDealt = false;
         public BTPlayer CurrentLargestDealtBy;
 
-        public InlineKeyboardMarkup GroupMarkup = null;
-        public InlineKeyboardMarkup BotMarkup;
+        public ReplyMarkupBase GroupMarkup = null;
+        public ReplyMarkupBase BotMarkup;
 
         public BTPlayer Initiator;
         public Guid Id = Guid.NewGuid();
@@ -84,18 +83,8 @@ namespace BigTwoBot
                 ChipsPerCard = DbGroup.ChipsPerCard ?? Constants.ChipsPerCard;
                 db.SaveChanges();
                 if (GroupLink != null)
-                    GroupMarkup = new InlineKeyboardMarkup(
-                        new InlineKeyboardButton[][] {
-                            new InlineKeyboardUrlButton[] {
-                                new InlineKeyboardUrlButton(GetTranslation("BackGroup", GroupName), GroupLink)
-                            }
-                        });
-                BotMarkup = new InlineKeyboardMarkup(
-                    new InlineKeyboardButton[][] {
-                        new InlineKeyboardButton[] {
-                            new InlineKeyboardUrlButton(GetTranslation("GoToBot"), $"https://t.me/{Bot.Me.Username}")
-                        }
-                    });
+                    GroupMarkup = new ReplyMarkupMaker(ReplyMarkupMaker.ReplyMarkupType.Inline).AddRow().AddUrlButton(GetTranslation("BackGroup", GroupName), GroupLink, 0);
+                BotMarkup = new ReplyMarkupMaker(ReplyMarkupMaker.ReplyMarkupType.Inline).AddRow().AddUrlButton(GetTranslation("GoToBot"), $"https://t.me/{Bot.Me.Username}", 0);
             }
             // something
             #endregion
@@ -128,7 +117,7 @@ namespace BigTwoBot
 #endif
                     for (var i = 0; i < JoinTime; i++)
                     {
-                        if (Players.Count == 4)
+                        if (Players.Count >= 4)
                             break;
                         if (this.Phase == GamePhase.InGame)
                             break;
@@ -191,7 +180,7 @@ namespace BigTwoBot
                     if (this.Phase == GamePhase.Ending)
                         return;
 
-                    if (this.Players.Count() == 4)
+                    if (this.Players.Count() >= 4)
                         this.Phase = GamePhase.InGame;
                     if (this.Phase != GamePhase.InGame)
                     {
@@ -248,7 +237,7 @@ namespace BigTwoBot
                         #region Start!
                         foreach (var player in Players)
                         {
-                            SendDeck(player);
+                            SendDeck(player, first: true);
                         }
                         while (Phase != GamePhase.Ending)
                         {
@@ -294,6 +283,11 @@ namespace BigTwoBot
             var player = this.Players.FirstOrDefault(x => x.TelegramId == u.Id);
             if (player != null)
                 return;
+            if (Players.Count >= 4)
+            {
+                Phase = GamePhase.InGame;
+                return;
+            }
 
             using (var db = new BigTwoDb())
             {
@@ -310,6 +304,8 @@ namespace BigTwoBot
                     DbPlayer.UserName = u.Username;
                     db.SaveChanges();
                 }
+                if (Players.Count >= 4)
+                    return;
                 BTPlayer p = new BTPlayer(u, DbPlayer.Id);
                 try
                 {
@@ -341,6 +337,9 @@ namespace BigTwoBot
             while (true);
 
             Send(GetTranslation("JoinedGame", u.GetName()) + Environment.NewLine + GetTranslation("JoinInfo", Players.Count, 4));
+
+            if (Players.Count >= 4)
+                Phase = GamePhase.InGame;
         }
 
         private void RemovePlayer(User user)
@@ -534,6 +533,7 @@ namespace BigTwoBot
 
         public void PrepareGame()
         {
+            Players = Players.Take(4).ToList();
             var tempPlayerList = Players.Shuffle(10);
             PlayerQueue = new Queue<BTPlayer>(tempPlayerList);
 
@@ -623,14 +623,22 @@ namespace BigTwoBot
                 db.SaveChanges();
 
             }
+
+            foreach (var p in Players)
+            {
+                if (p.FirstDeckMessage != null)
+                    Bot.Api.EditMessageReplyMarkup(p.TelegramId, p.FirstDeckMessage.MessageId, null);
+            }
             Send(finalMsg);
 
         }
 
-        public void SendDeck(BTPlayer p, Message msg = null)
+        public void SendDeck(BTPlayer p, Message msg = null, bool first = false)
         {
             p.DeckText = GetTranslation("CardsInHand") + Environment.NewLine + p.Hand.ToList().GetString();
-            if (SendPM(p, p.DeckText, GetRefreshMarkup(p)) != null && msg != null)
+            if (first)
+                p.FirstDeckMessage = SendPM(p, p.DeckText, GetRefreshMarkup(p));
+            else if (SendPM(p, p.DeckText) != null && msg != null)
                 msg.Reply(GetTranslation("SentPM"), BotMarkup);
         }
 
@@ -645,9 +653,13 @@ namespace BigTwoBot
                     var toNotify = db.NotifyGames.Where(x => x.GroupId == grpId && x.UserId != Initiator.TelegramId).Select(x => x.UserId).ToList();
                     foreach (int user in toNotify)
                     {
-                        Bot.Send(user, GetTranslation("GameIsStarting", GroupLink != null ? $"<a href='{GroupLink}'>{GroupName}</a>" : GroupName), GroupMarkup);
+                        try
+                        {
+                            Bot.Send(user, GetTranslation("GameIsStarting", GroupLink != null ? $"<a href='{GroupLink}'>{GroupName}</a>" : GroupName), GroupMarkup);
+                        }
+                        catch { }
                     }
-                    db.Database.ExecuteSqlCommand($"DELETE FROM NotifyGame WHERE GROUPID = {grpId}");
+                    var res = db.Database.ExecuteSqlCommand($"DELETE FROM NotifyGame WHERE GROUPID = {grpId}");
                     db.SaveChanges();
                 }
             }
@@ -658,7 +670,7 @@ namespace BigTwoBot
 
         #region Bot API Related Methods
 
-        public Message Send(string msg, InlineKeyboardMarkup markup = null)
+        public Message Send(string msg, ReplyMarkupBase markup = null)
         {
             try
             {
@@ -671,7 +683,7 @@ namespace BigTwoBot
             }
         }
 
-        public Message SendPM(BTPlayer p, string msg, InlineKeyboardMarkup markup = null)
+        public Message SendPM(BTPlayer p, string msg, ReplyMarkupBase markup = null)
         {
             try
             {
@@ -684,7 +696,7 @@ namespace BigTwoBot
             }
         }
 
-        public Message SendMenu(BTPlayer p, string msg, InlineKeyboardMarkup markup)
+        public Message SendMenu(BTPlayer p, string msg, ReplyMarkupBase markup)
         {
             try
             {
@@ -734,7 +746,7 @@ namespace BigTwoBot
                 row.Clear();
                 var subButtons = buttons.Skip(i).Take(2).ToList();
                 foreach (var button in subButtons)
-                    row.Add(new InlineKeyboardCallbackButton(button.Item1, button.Item2));
+                    row.Add(new InlineKeyboardButton(button.Item1) { CallbackData = button.Item2 });
                 rows.Add(row.ToArray());
             }
             return new InlineKeyboardMarkup(rows.ToArray());
@@ -764,7 +776,7 @@ namespace BigTwoBot
             for (int i = 0; i < buttons.Count; i++)
             {
                 row.Clear();
-                row.Add(new InlineKeyboardCallbackButton(buttons[i].Item1, buttons[i].Item2));
+                row.Add(new InlineKeyboardButton(buttons[i].Item1) { CallbackData = buttons[i].Item2 });
                 rows.Add(row.ToArray());
             }
             return new InlineKeyboardMarkup(rows.ToArray());
@@ -786,7 +798,7 @@ namespace BigTwoBot
                 row.Clear();
                 var subButtons = buttons.Skip(i).Take(2).ToList();
                 foreach (var button in subButtons)
-                    row.Add(new InlineKeyboardCallbackButton(button.Item1, button.Item2));
+                    row.Add(new InlineKeyboardButton(button.Item1) { CallbackData = button.Item2 });
                 rows.Add(row.ToArray());
             }
             return new InlineKeyboardMarkup(rows.ToArray());
@@ -797,7 +809,7 @@ namespace BigTwoBot
             return new InlineKeyboardMarkup(
                 new InlineKeyboardButton[][] {
                     new InlineKeyboardButton[] {
-                        new InlineKeyboardCallbackButton(GetTranslation("Refresh"), $"{this.Id.ToString()}|{p.TelegramId}|refresh")
+                        new InlineKeyboardButton(GetTranslation("Refresh")){CallbackData = $"{this.Id.ToString()}|{p.TelegramId}|refresh" }
                     }
                 }
             );
@@ -812,7 +824,7 @@ namespace BigTwoBot
             switch (msg.Text.ToLower().Substring(1).Split()[0].Split('@')[0])
             {
                 case "join":
-                    if (Phase == GamePhase.Joining)
+                    if (Phase == GamePhase.Joining && Players.Count < 4)
                         AddPlayer(msg.From);
                     break;
                 case "flee":
@@ -826,7 +838,7 @@ namespace BigTwoBot
                         AddPlayer(msg.From);
                     break;
                 case "forcestart":
-                    if (this.Players.Count() >= 2) Phase = GamePhase.InGame;
+                    if (this.Players.Count() >= 4) Phase = GamePhase.InGame;
                     else
                     {
                         Send(GetTranslation("GameEnded"));
