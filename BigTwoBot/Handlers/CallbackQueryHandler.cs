@@ -27,13 +27,12 @@ namespace BigTwoBot.Handlers
                 if (callback == null)
                 {
                     // maybe it is from game
-                    var g = Bot.GetGameByGuid(args[0]);
-                    if (g != null)
-                    {
-                        var temp = $"game|{call.Data}";
-                        args = new[] { temp.Split('|')[0], temp.Remove(0, temp.IndexOf('|') + 1) };
-                        callback = Bot.Callbacks.FirstOrDefault(x => x.Trigger == args[0]);
-                    }
+
+                    var temp = $"game|{call.Data}";
+                    args = new[] { temp.Split('|')[0], temp.Remove(0, temp.IndexOf('|') + 1) };
+                    callback = Bot.Callbacks.FirstOrDefault(x => x.Trigger == args[0]);
+
+                    /*
                     if (callback == null)
                     {
                         BotMethods.AnswerCallback(call);
@@ -41,6 +40,7 @@ namespace BigTwoBot.Handlers
                         BotMethods.Send(Constants.LogGroupId, $"Error occured! No callback method \"{args[0]}\" found! at CallbackHandler.cs, OnCallback()");
                         return;
                     }
+                    */
                 }
 
                 if (callback.AdminOnly && !Helpers.IsGroupAdmin(call))

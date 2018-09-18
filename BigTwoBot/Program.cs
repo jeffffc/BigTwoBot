@@ -7,11 +7,15 @@ using TelegramBotApi;
 using System.Runtime.Caching;
 using BigTwoBot.Handlers;
 using BigTwoBot.Models;
+using BigTwoBot.Models.Requests;
 using System.Threading;
 using ConsoleTables;
 using System.Xml.Linq;
 using System.IO;
 using System.Drawing;
+using NamedPipeWrapper;
+using System.Diagnostics;
+using BigTwoBot.Models.Information;
 
 namespace BigTwoBot
 {
@@ -23,8 +27,12 @@ namespace BigTwoBot
         public static bool MaintMode = false;
         public static DateTime Startup;
 
-        private static List<BigTwo> _Games = new List<BigTwo>();
-        public static List<BigTwo> Games { get { return _Games; } set { _Games = Games; } }
+        public static NamedPipeServer<ControlNodeMessage> Control = new NamedPipeServer<ControlNodeMessage>("BigTwoControl");
+        public static bool IsRefreshing = false;
+        public static List<string> Refreshing = new List<string>();
+        public static List<Node> Nodes = new List<Node>();
+        public static bool UpdatingControl = false;
+
 
         static void Main(string[] args)
         {
@@ -69,10 +77,40 @@ namespace BigTwoBot
                 }
             }
 
+            // control named pipe server
+            Control.ClientDisconnected += (sender) => RefreshNodes();
+            Control.ClientConnected += (sender) => RefreshNodes();
+            Control.Error += (e) => Console.WriteLine(e);
+            Control.ClientMessage += (sender, message) =>
+            {
+                try
+                {
+                    var info = message.Info;
+                    var nodeId = message.NodeId;
+                    if (info.Type == InfoType.Refresh) Refreshing.Add(nodeId);
+                    else
+                    {
+                        var node = Nodes.FirstOrDefault(x => x.Id == nodeId);
+                        if (node != null) node.ReceivedInfo(info);
+                        else throw new Exception("Can't understand message from node");
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            };
+            Control.Start();
+#if RELEASE
+            NewNode();
+#endif
+
+
             English = Helpers.ReadEnglish();
             Langs = Helpers.ReadLanguageFiles();
 
-            Bot.Api.GetUpdatesAsync(offset: -1).Wait();
+            var offset = Bot.Api.GetUpdates(offset: -1);
+            if (offset.Any()) Bot.Api.GetUpdates(offset: offset.FirstOrDefault().Id);
             Handler.HandleUpdates(Bot.Api);
             Bot.Api.StartReceiving();
             Startup = DateTime.Now;
@@ -102,8 +140,13 @@ namespace BigTwoBot
 
         private static void UpdateConsole()
         {
+            Console.Clear();
+            Console.WindowWidth += 25;
+            DateTime LastErrorNotify = DateTime.MinValue;
+
             while (true)
             {
+                /*
                 Console.Clear();
                 var Uptime = DateTime.Now - Startup;
                 string msg = $"Startup Time: {Startup.ToString()}";
@@ -122,7 +165,95 @@ namespace BigTwoBot
                 table.Write(Format.Alternative);
 
                 Thread.Sleep(2000);
+                */
+                try
+                {
+                    var table = new ConsoleTable("Node ID", "Started at", "GameNum", "PlayerNum", "ShuttingDown");
+
+                    foreach (var n in Nodes)
+                    {
+                        table.AddRow(n.Id, n.StartTime.ToShortDateString() + " " + n.StartTime.ToShortTimeString(), n.Games.Count, n.Games.Sum(x => x.Players.Count), n.ShuttingDown);
+                    }
+
+                    Console.Clear();
+                    Console.WriteLine();
+                    if (MaintMode)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("     MAINTENANCE MODE ENABLED! NO GAMES CAN BE STARTED!");
+
+                        if (UpdatingControl)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("    BOT IS ABOUT TO UPDATE AS SOON AS ALL GAMES STOPPED!");
+                        }
+
+                        Console.WriteLine();
+                    }
+
+                    Console.ForegroundColor = ConsoleColor.Gray;
+
+                    Console.WriteLine($"Started at: {Startup.ToShortDateString()} {Startup.ToLongTimeString()}");
+                    Console.WriteLine($"Uptime: {(DateTime.Now - Startup).ToString("dd\\.hh\\:mm\\:ss")}");
+                    Console.WriteLine();
+
+                    table.Write(Format.Alternative);
+                    Thread.Sleep(1000);
+                }
+                catch (Exception e)
+                {
+                    if (DateTime.Now.AddMinutes(-30) > LastErrorNotify)
+                    {
+                        e.LogError();
+                        LastErrorNotify = DateTime.UtcNow;
+                    }
+                }
+
             }
         }
+
+        public static void NewNode()
+        {
+#if RELEASE
+            var latest = Directory.GetDirectories(Path.Combine(Constants.GetBasePath(), Constants.NodesFolder)).OrderByDescending(x => x).First();
+            Process.Start(Path.Combine(latest, "BigTwoBotNode.exe"));
+#endif
+        }
+
+        static void RefreshNodes()
+        {
+            if (IsRefreshing) return;
+            IsRefreshing = true;
+            Refreshing.Clear();
+            Control.PushMessage(new ControlNodeMessage(new PingRequest()));
+            Thread.Sleep(2000);
+            string[] refreshing = new string[20];
+            Refreshing.CopyTo(refreshing);
+            List<string> toRemove = new List<string>();
+
+            foreach (var node in Nodes.Where(x => !refreshing.Contains(x.Id))) toRemove.Add(node.Id);
+            Nodes.RemoveAll(x => toRemove.Contains(x.Id));
+            foreach (var node in refreshing.Where(x => x != null && !Nodes.Any(y => y.Id == x))) Nodes.Add(new Node(node));
+            Refreshing.Clear();
+
+            if (!UpdatingControl && !Nodes.Any(x => !x.ShuttingDown && x.Games.Count < Constants.NodeMaxGames))
+            {
+#if RELEASE
+                NewNode();
+#endif
+            }
+            else
+            {
+                var all = Nodes.Where(x => x.Games.Count == 0 && !x.ShuttingDown);
+                if (all.Count() > 1)
+                {
+                    var nodes = all.Take(all.Count() - 1);
+                    foreach (var n in nodes)
+                        n?.SendRequest(new ChangeStatusRequest(shutDown: true, nodeId: n.Id));
+                }
+            }
+            IsRefreshing = false;
+        }
+
     }
 }

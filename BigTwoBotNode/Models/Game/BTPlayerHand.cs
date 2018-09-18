@@ -1,12 +1,11 @@
-﻿using BigTwoBot.Models;
-using MoreLinq;
+﻿using MoreLinq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BigTwoBot.Models
+namespace BigTwoBotNode.Models
 {
     public class BTPlayerHand : BTCardCollection
     {

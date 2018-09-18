@@ -12,13 +12,14 @@ using Database;
 using System.Diagnostics;
 using System.IO;
 using System.Xml.Linq;
-using static BigTwoBot.Helpers;
+using static BigTwoBotNode.Helpers;
 using ConsoleTables;
 using System.Drawing;
-using System.Drawing.Imaging;
-using static BigTwoBot.Models.BTPlayer;
+using BigTwoBotNode.Models;
+using static BigTwoBotNode.Models.BTPlayer;
+using BigTwoBot.Models.Information;
 
-namespace BigTwoBot
+namespace BigTwoBotNode
 {
     public class BigTwo : IDisposable
     {
@@ -48,7 +49,7 @@ namespace BigTwoBot
         public ReplyMarkupBase BotMarkup;
 
         public BTPlayer Initiator;
-        public Guid Id = Guid.NewGuid();
+        public string Id = Guid.NewGuid().ToString("N");
         public int JoinTime = Constants.JoinTime;
         public GamePhase Phase = GamePhase.Joining;
         private int _secondsToAdd = 0;
@@ -65,6 +66,7 @@ namespace BigTwoBot
 
         public BigTwo(long chatId, User u, string groupName, string chatUsername = null)
         {
+
             ChatId = chatId;
             GroupName = groupName;
             Players = new List<BTPlayer>();
@@ -88,6 +90,8 @@ namespace BigTwoBot
             }
             // something
             #endregion
+
+            Program.SendInfo(new GameStartedInfo(Id, ChatId, GroupName));
 
             var msg = GetTranslation("NewGame", u.GetName());
             if (PlayChips)
@@ -269,7 +273,7 @@ namespace BigTwoBot
                     }
                 }
             }
-
+            Program.SendInfo(new GameEndedInfo(Id));
             Bot.RemoveGame(this);
         }
 
@@ -278,7 +282,7 @@ namespace BigTwoBot
 
         #region Player Control
 
-        private void AddPlayer(User u, bool newGame = false)
+        public void AddPlayer(User u, bool newGame = false)
         {
             var player = this.Players.FirstOrDefault(x => x.TelegramId == u.Id);
             if (player != null)
@@ -338,11 +342,13 @@ namespace BigTwoBot
 
             Send(GetTranslation("JoinedGame", u.GetName()) + Environment.NewLine + GetTranslation("JoinInfo", Players.Count, 4));
 
+            Program.SendInfo(new PlayerJoinedInfo(Id, u.Id));
+
             if (Players.Count >= 4)
                 Phase = GamePhase.InGame;
         }
 
-        private void RemovePlayer(User user)
+        public void RemovePlayer(User user)
         {
             if (this.Phase != GamePhase.Joining) return;
 
@@ -361,6 +367,8 @@ namespace BigTwoBot
             while (true);
 
             Send(GetTranslation("FledGame", user.GetName()) + Environment.NewLine + GetTranslation("JoinInfo", Players.Count, 3, 8));
+
+            Program.SendInfo(new PlayerFledInfo(Id, user.Id));
         }
 
         public void CleanPlayers()
@@ -373,6 +381,32 @@ namespace BigTwoBot
             }
         }
 
+        public void ExtendTimer(Message msg)
+        {
+            if (Phase == GamePhase.Joining)
+            {
+                _secondsToAdd += Constants.ExtendTime;
+                Reply(msg.MessageId, GetTranslation("ExtendJoining", Constants.ExtendTime));
+            }
+        }
+
+        public void ForceStart()
+        {
+            if (this.Players.Count() >= 4) Phase = GamePhase.InGame;
+            else
+            {
+                Send(GetTranslation("GameEnded"));
+                Phase = GamePhase.Ending;
+                Bot.RemoveGame(this);
+            }
+        }
+
+        public void KillGame()
+        {
+            Send(GetTranslation("KillGame"));
+            Phase = GamePhase.Ending;
+            Bot.RemoveGame(this);
+        }
         #endregion
 
 

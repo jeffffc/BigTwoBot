@@ -222,8 +222,8 @@ namespace BigTwoBot
         public static void RunInfo(Message msg, string[] args)
         {
             string uptime = $"{(DateTime.Now - Program.Startup):dd\\.hh\\:mm\\:ss\\.ff}";
-            int gamecount = Bot.Games.Count;
-            int playercount = Bot.Games.Select(x => x.Players.Count).Sum();
+            int gamecount = Program.Nodes.Sum(x => x.Games.Count);
+            int playercount = Program.Nodes.Sum(x => x.Games.Sum(y => y.Players.Count));
             Bot.Send(msg.Chat.Id, GetTranslation("Runinfo", GetLanguage(msg.Chat.Id), uptime, gamecount, playercount));
         }
 

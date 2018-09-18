@@ -4,15 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TelegramBotApi.Types.Markup;
-using static BigTwoBot.Helpers;
+using static BigTwoBotNode.Helpers;
 
-namespace BigTwoBot.Models
+namespace BigTwoBotNode.Models
 {
     public class DealCardMenu
     {
         public InlineKeyboardMarkup MarkUp { get; set; }
         private Guid _GameId { get; set; }
-        public string GameId { get { return _GameId.ToString(); } }
+        public string GameId { get { return _GameId.ToString("N"); } }
         public int TelegramId { get; set; }
         public long GroupId { get; set; }
         public string Language { get; set; }
@@ -27,9 +27,10 @@ namespace BigTwoBot.Models
 
         }
 
-        public DealCardMenu(BTPlayer p, Guid gameId, long groupId)
+        public DealCardMenu(BTPlayer p, string gameId, long groupId)
         {
-            _GameId = gameId;
+            Guid.TryParse(gameId, out var guid);
+            _GameId = guid;
             TelegramId = p.TelegramId;
             Hand = p.Hand;
             GroupId = groupId;

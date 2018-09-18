@@ -25,7 +25,7 @@ namespace MoreLinq
     using System;
     using System.Collections.Generic;
 
-    static partial class MoreEnumerable
+    public static partial class MoreEnumerable
     {
         /// <summary>
         /// Returns all distinct elements of the given source, where "distinctness"

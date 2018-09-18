@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TelegramBotApi.Types;
 
-namespace BigTwoBot.Models
+namespace BigTwoBotNode.Models
 {
     public class BTPlayer
     {

@@ -12,6 +12,7 @@ using TelegramBotApi.Types;
 using Database;
 using BigTwoBot.Handlers;
 using static BigTwoBot.Helpers;
+using BigTwoBot.Models.Requests;
 
 namespace BigTwoBot
 {
@@ -25,14 +26,14 @@ namespace BigTwoBot
             var playerId = temp[1];
             var playerChoice = temp[2];
 
-            var game = Bot.GetGameByGuid(gameId);
-            if (game != null)
+            var node = Program.Nodes.FirstOrDefault(x => x.Games.Any(y => y.Id == gameId));
+
+            if (node != null)
             {
-                game.HandleQuery(query, temp);
-            }
-            else
-            {
-                // should not happen
+                if (Bot.Api.AnswerCallbackQuery(query.Id))
+                {
+                    node.SendRequest(new ChoiceRequest(gameId, temp, query.From, query));
+                }
             }
         }
 

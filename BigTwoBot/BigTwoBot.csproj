@@ -44,6 +44,9 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="NamedPipeWrapper, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NamedPipeWrapper.1.5.0\lib\net40\NamedPipeWrapper.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.11.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -81,8 +84,8 @@
     <Reference Include="System.Xml.ReaderWriter, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Xml.ReaderWriter.4.3.1\lib\net46\System.Xml.ReaderWriter.dll</HintPath>
     </Reference>
-    <Reference Include="TelegramBotApi, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Crazypokemondev.TelegramBotApi.1.0.8\lib\net461\TelegramBotApi.dll</HintPath>
+    <Reference Include="TelegramBotApi, Version=1.0.10.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Crazypokemondev.TelegramBotApi.1.0.10\lib\net461\TelegramBotApi.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -98,25 +101,35 @@
     <Compile Include="Handlers\MainHandler.cs" />
     <Compile Include="Handlers\MessageHandler.cs" />
     <Compile Include="Helpers.cs" />
-    <Compile Include="Models\Game\BTPokerHands.cs" />
-    <Compile Include="Models\Game\BTCardCollection.cs" />
-    <Compile Include="Models\Game\BTCardSuit.cs" />
-    <Compile Include="Models\Game\BTDeck.cs" />
-    <Compile Include="Models\Game\BTPlayedCards.cs" />
-    <Compile Include="Models\Game\BTPlayer.cs" />
-    <Compile Include="Models\Game\BTPlayerHand.cs" />
-    <Compile Include="Models\Game\DealCardMenu.cs" />
-    <Compile Include="Models\Game\HandComparison.cs" />
+    <Compile Include="Models\ControlNode\ControlNodeMessage.cs" />
+    <Compile Include="Models\ControlNode\Game.cs" />
+    <Compile Include="Models\ControlNode\Information\GameEndedInfo.cs" />
+    <Compile Include="Models\ControlNode\Information\GameStartedInfo.cs" />
+    <Compile Include="Models\ControlNode\Information\IInfo.cs" />
+    <Compile Include="Models\ControlNode\Information\PlayerFledInfo.cs" />
+    <Compile Include="Models\ControlNode\Information\PlayerJoinedInfo.cs" />
+    <Compile Include="Models\ControlNode\Information\RefreshInfo.cs" />
+    <Compile Include="Models\ControlNode\Node.cs" />
+    <Compile Include="Models\ControlNode\Requests\ChangeStatusRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\ChoiceRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\ExtendRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\FleeGameRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\ForceStartRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\ShowDeckRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\IRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\JoinGameRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\KillGameRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\PingRequest.cs" />
+    <Compile Include="Models\ControlNode\Requests\GameRequests\StartGameRequest.cs" />
+    <Compile Include="Models\ControlNode\Information\StatusChangedInfo.cs" />
     <Compile Include="Models\General\Callback.cs" />
     <Compile Include="Models\General\Commands.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Models\General\GroupAdmin.cs" />
     <Compile Include="Models\General\Locale.cs" />
-    <Compile Include="Models\Game\BTCard.cs" />
     <Compile Include="MoreLinq\MoreEnumerable.DistinctBy.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="BigTwo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

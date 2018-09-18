@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Caching;
 using System.Text;
 using System.Threading.Tasks;
 using TelegramBotApi;
@@ -11,18 +10,19 @@ using TelegramBotApi.Types.Markup;
 using TelegramBotApi.Enums;
 using TelegramBotApi.Types.Upload;
 using TelegramBotApi.Types.Exceptions;
+using BigTwoBot;
 
-namespace BigTwoBot
+namespace BigTwoBotNode
 {
     public class Bot
     {
         public static TelegramBot Api;
         public static User Me;
 
-        internal static HashSet<Models.Command> Commands = new HashSet<Models.Command>();
-        internal static HashSet<Models.Callback> Callbacks = new HashSet<Models.Callback>();
-        public delegate void CommandMethod(Message msg, string[] args);
-        public delegate void CallbackMethod(CallbackQuery query, string[] args);
+        //internal static HashSet<Models.Command> Commands = new HashSet<Models.Command>();
+        //internal static HashSet<Models.Callback> Callbacks = new HashSet<Models.Callback>();
+        //public delegate void CommandMethod(Message msg, string[] args);
+        //public delegate void CallbackMethod(CallbackQuery query, string[] args);
 
 
         internal static Message Send(long chatId, string text, ReplyMarkupBase replyMarkup = null, ParseMode parseMode = ParseMode.Html, bool disableWebPagePreview = true, bool disableNotification = false)
@@ -53,30 +53,31 @@ namespace BigTwoBot
             }
         }
 
-        internal static List<GroupAdmin> GetChatAdmins(long chatid, bool forceCacheUpdate = false)
+        #region Game related
+        public static List<BigTwo> Games { get { return Program.Games; } }
+
+        
+        public static BigTwo GetGameByChatId(long chatId)
         {
-            try
-            {   // Admins are cached for 1 hour
-                string itemIndex = $"{chatid}";
-                List<GroupAdmin> admins = Program.AdminCache[itemIndex] as List<GroupAdmin>; // Read admin list from cache
-                if (admins == null || forceCacheUpdate)
-                {
-                    admins = Api.GetChatAdministratorsAsync(chatid).Result.Select(x =>
-                        new GroupAdmin(x.User.Id, chatid, x.User.FirstName)).ToList();
-
-                    CacheItemPolicy policy = new CacheItemPolicy() { AbsoluteExpiration = DateTime.Now.AddHours(1) };
-                    Program.AdminCache.Set(itemIndex, admins, policy); // Write admin list into cache
-                }
-
-                return admins;
-            }
-            catch (Exception e)
-            {
-                e.LogError();
-                return null;
-            }
+            return Program.Games.FirstOrDefault(x => x.ChatId == chatId);
         }
 
+        public static void AddGame(BigTwo game)
+        {
+            Program.Games.Add(game);
+        }
+
+        public static void RemoveGame(BigTwo game)
+        {
+            Program.Games.Remove(game);
+        }
+
+        public static void RemoveGame(long chatId)
+        {
+            RemoveGame(GetGameByChatId(chatId));
+        }
+
+        #endregion
 
     }
 

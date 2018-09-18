@@ -12,6 +12,7 @@ using TelegramBotApi.Types;
 using Database;
 using TelegramBotApi.Enums;
 using static BigTwoBot.Helpers;
+using BigTwoBot.Models.Requests;
 
 namespace BigTwoBot
 {
@@ -30,7 +31,7 @@ namespace BigTwoBot
 
         public static void CheckCurrentGames()
         {
-            while (Bot.Games.Count > 0)
+            while (Program.Nodes.Sum(x => x.Games.Count) > 0)
                 Thread.Sleep(1000);
             Environment.Exit(1);
             return;
@@ -124,37 +125,7 @@ namespace BigTwoBot
         [Attributes.Command(Trigger = "test", DevOnly = true)]
         public static void Test(Message msg, string[] args)
         {
-            var deck = new BigTwoBot.Models.BTDeck();
-            deck.Shuffle(10);
-
-            bool ok = false;
-
-            var Players = new List<BigTwoBot.Models.BTPlayer>
-            {
-                new BigTwoBot.Models.BTPlayer(new User(), 1),
-                new BigTwoBot.Models.BTPlayer(new User(), 1),
-                new BigTwoBot.Models.BTPlayer(new User(), 1),
-                new BigTwoBot.Models.BTPlayer(new User(), 1)
-            };
-            while (!ok)
-            // assign cards to players
-            {
-                foreach (var p in Players)
-                    p.Hand.Clear();
-                for (int i = 0; i < deck.Count; i += 4)
-                {
-                    var cards = deck.Skip(i).Take(4).ToArray();
-                    for (int j = 0; j < 4; j++)
-                    {
-                        Players[j].AddCard(cards[j]);
-                    }
-                }
-                if (!Players.Any(x => x.CheckBadHand()))
-                {
-                    ok = true;
-                }
-            }
-            msg.Reply(Players.Select(x => x.Hand.Cards.OrderBy(y => y.GameValue).Select(y => y.GetName()).Aggregate((i, j) => i + " " + j)).Aggregate((x, y) => x + "\n" + y));
+            Program.Control.PushMessage(new Models.ControlNodeMessage(new PingRequest()));
         }
     }
 }

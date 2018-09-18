@@ -28,6 +28,13 @@ namespace BigTwoBot
         {
             return (!temp) ? Path.GetFullPath(_languageDirectory) : Path.GetFullPath(_languageTempDirectory);
         }
+        private static string _basePath = "C:\\BigTwoBot\\";
+        public static string GetBasePath()
+        {
+            return Path.GetFullPath(_basePath);
+        }
+        public static string NodesFolder = "Nodes";
+        public static int NodeMaxGames = 5;
         public static long LogGroupId = -1001347944461;
         public static int[] Dev = new int[] { 106665913 };
 
